@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>KO Pad</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="description" content="A sampler and sequencer for iPad in the style of the EP-133 K.O. II. Works offline.">
+<meta name="theme-color" content="#16171a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="KO Pad">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="style.css">
+<script>try { const t = JSON.parse(localStorage.getItem('ko.settings') || '{}').theme; if (t) document.documentElement.dataset.theme = t; } catch (e) { /* default theme */ }</script>
+</head>
+<body>
+<div id="start" role="dialog" aria-label="Start">
+  <div class="start-card">
+    <h1>KO Pad</h1>
+    <p>Sampler and sequencer in the style of the EP-133 K.O. II.</p>
+    <button id="startBtn" class="btn big accent">TAP TO START</button>
+    <p id="startMsg" class="dim">Audio needs one tap to unlock on iPad.</p>
+  </div>
+</div>
+
+<div id="app" class="v-pads">
+  <header id="top">
+    <div class="brand">KO<b>PAD</b></div>
+    <select id="projectSel" class="extra" aria-label="Project"></select>
+    <div class="transport">
+      <button id="btnStop" class="btn" aria-label="Stop">&#9632;</button>
+      <button id="btnPlay" class="btn" aria-label="Play">&#9654;</button>
+      <button id="btnRec" class="btn rec" aria-label="Record">&#9679;</button>
+      <button id="btnMetro" class="btn small extra" aria-pressed="false">METRO</button>
+    </div>
+    <div class="stepper" id="bpmBox">
+      <button class="btn small" id="bpmDn" aria-label="Slower">&minus;</button>
+      <div class="val" id="bpmVal" title="Drag up or down to change tempo">120</div>
+      <button class="btn small" id="bpmUp" aria-label="Faster">+</button>
+      <button class="btn small extra" id="bpmTap">TAP</button>
+      <span class="lab">BPM</span>
+    </div>
+    <div class="stepper extra">
+      <input id="swing" type="range" min="0" max="100" value="0" aria-label="Swing">
+      <span class="lab">SWING</span>
+    </div>
+    <div class="spacer"></div>
+    <div id="offline" class="chip extra" title="Offline status">&hellip;</div>
+    <button id="btnMore" class="btn phone-only" aria-label="More controls" aria-expanded="false">&#8943;</button>
+  </header>
+
+  <main>
+    <section id="deck">
+      <div id="lcd">
+        <div class="l1"><span id="lcdProj">P1</span><span id="lcdGrp">A</span><span id="lcdPat">PAT 01</span><span id="lcdBars">1 BAR</span><span id="lcdPos" class="right">--.-.-</span></div>
+        <div class="l2" id="lcdSample">&nbsp;</div>
+        <div class="meter"><i id="meter"></i></div>
+      </div>
+      <div id="dials" class="hw-only">
+        <div id="dialX"></div>
+        <button class="btn small" id="fxCycle" aria-label="Choose effect">FX OFF</button>
+        <div id="dialY"></div>
+      </div>
+      <div class="padwrap">
+        <div id="groups" role="group" aria-label="Groups"></div>
+        <div id="pads" role="group" aria-label="Pads"></div>
+        <div id="side" class="hw-only">
+          <span class="lab">VOL</span>
+          <div id="slider"></div>
+          <button class="btn small" id="sideFader" aria-label="Open the fader mixer">FADER</button>
+          <button class="btn small" id="sideKeys" aria-pressed="false">KEYS</button>
+        </div>
+      </div>
+      <div id="modes">
+        <div id="modesMain">
+          <div class="cell"><span class="lab">PATTERN</span>
+            <button class="btn small" id="patDn" aria-label="Previous pattern">&minus;</button><div class="val" id="patVal">1</div><button class="btn small" id="patUp" aria-label="Next pattern">+</button></div>
+          <div class="cell"><span class="lab">BARS</span>
+            <button class="btn small" id="barDn" aria-label="Fewer bars">&minus;</button><div class="val" id="barVal">1</div><button class="btn small" id="barUp" aria-label="More bars">+</button></div>
+          <div class="cell keys"><button class="btn small" id="btnKeys" aria-pressed="false">KEYS</button></div>
+          <div class="cell hold"><button class="btn small" id="btnRepeat" aria-pressed="false"><span class="nr">NOTE </span>REPEAT<i> (HOLD)</i></button>
+            <button class="btn small" id="btnErase" aria-pressed="false">ERASE<i> (HOLD)</i></button>
+            <button class="btn small" id="btnUndo">UNDO</button></div>
+          <button class="btn small phone-only" id="btnTools" aria-expanded="false">TOOLS</button>
+        </div>
+        <div id="modesMore">
+          <div class="cell"><span class="lab">BEATS /4</span>
+            <button class="btn small" id="beatDn" aria-label="Fewer beats">&minus;</button><div class="val" id="beatVal">4</div><button class="btn small" id="beatUp" aria-label="More beats">+</button></div>
+          <div class="cell"><span class="lab">TIMING</span><select id="timingSel" aria-label="Timing"></select></div>
+          <div class="cell"><span class="lab">OCTAVE</span>
+            <button class="btn small" id="octDn">OCT&minus;</button><div class="val" id="octVal">0</div><button class="btn small" id="octUp">OCT+</button></div>
+          <div class="cell"><button class="btn small" id="btnSample" aria-pressed="false">SAMPLE</button>
+            <button class="btn small" id="btnCommit">COMMIT</button></div>
+          <div class="cell"><span class="lab">PATTERN TOOLS</span>
+            <button class="btn small" id="btnNextEmpty">NEXT EMPTY</button>
+            <button class="btn small" id="btnX2">LENGTH x2</button><button class="btn small" id="btnHalf">LENGTH /2</button></div>
+          <div class="cell"><span class="lab">TIMING CORRECT</span>
+            <button class="btn small" id="btnCorrPad">PAD</button><button class="btn small" id="btnCorrAll">ALL</button></div>
+          <div class="cell"><span class="lab">SOLO</span>
+            <button class="btn small" id="btnSoloG" aria-pressed="false">GROUP</button><button class="btn small" id="btnSoloP" aria-pressed="false">PAD</button>
+            <button class="btn small" id="btnOver" aria-pressed="false">OVERWRITE REC</button></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="panel">
+      <nav id="tabs" role="tablist"></nav>
+      <div id="tabBody"></div>
+    </section>
+  </main>
+</div>
+<div id="toast" role="status"></div>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

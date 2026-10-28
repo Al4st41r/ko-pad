@@ -1,0 +1,12 @@
+backups/
+.venv/
+__pycache__/
+node_modules/
+.DS_Store
+*.zip
+web/samples/*
+!web/samples/README.md
+*.wav
+*.flac
+Default Preset Banks.jpg
+QUESTIONS_AND_ANSWERS.md
