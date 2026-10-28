@@ -17,6 +17,7 @@ KO Pad is an independent project. It is not made or endorsed by Teenage Engineer
 - [Project layout](#project-layout)
 - [Development](#development)
 - [Known limits](#known-limits)
+- [Licence](#licence)
 
 ## What it is
 
@@ -246,3 +247,7 @@ There is no build. Edit files in `web/` and reload.
 - Audio latency on Web Audio is typically 10 to 30 ms on iPad. It is fine for step programming and acceptable for finger drumming, but not equal to a hardware sampler.
 - Not included: time-stretch, MIDI in and out, sync to other devices, sidechain, live input effects, pressure-sensitive pads, USB transfer, and the hardware's exact punch-in effect set.
 - An iPad has no pressure-sensitive pads. In PROJECT, PAD VELOCITY can use the touch position on the pad instead.
+
+## Licence
+
+The code is released under the [MIT licence](LICENSE). The licence covers the code only. It does not cover any sounds you add, which stay under their own terms.
