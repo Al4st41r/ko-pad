@@ -234,7 +234,7 @@ ko-pad/
 
 There is no build. Edit files in `web/` and reload.
 
-- Tests: `node --test tests/` checks the data model, including loading of bad project files. `EP133_URL=<address> uv run --with playwright python tests/browser_test.py` drives the real page (playback, song recording, undo, note repeat, offline reload) and needs a sample set installed. `tests/phone_test.py` checks the phone layouts and `tests/look_test.py` checks the themes and the HARDWARE layout.
+- Tests: `node --test tests/` checks the data model, including loading of bad project files. `EP133_URL=<address> uv run --with playwright python tests/browser_test.py` drives the real page (playback, song recording, undo, note repeat, offline reload) and needs a sample set installed. `tests/phone_test.py` checks the phone layouts and `tests/look_test.py` checks the themes and the HARDWARE layout. `tests/nosounds_test.py` runs the app with no sounds installed and tests multi-file import, and needs no sample set.
 - Service worker: bump `VERSION` in `web/sw.js` when you add or rename files, and add new files to its `ASSETS` list.
 - Data on the device: projects are in `localStorage` under `ko.proj.N`, settings under `ko.settings`, and imported or recorded sounds in the IndexedDB database `ko-samples`.
 - Themes are CSS custom properties set by `data-theme` on `<html>` (see the top of `web/style.css`). The HARDWARE layout is the `.lay-hw` block at the end of the same file.

@@ -266,23 +266,26 @@ function soundTab(A, body) {
   rec.append(trim);
   rec.querySelector('#imp').onclick = () => rec.querySelector('#file').click();
   // Several files at once fill the pads from the selected one onwards (to the end of the group). One file goes to the selected pad.
+  // Pads that already hold a sound are replaced, so ask first. Files beyond the last pad are kept in the USER list.
   rec.querySelector('#file').onchange = async (e) => {
     const files = [...e.target.files]; e.target.value = '';
     if (!files.length) return;
-    let ok = 0, last = null;
+    const room = 12 - A.sel, pads = A.grp().pads;
+    if (pads.slice(A.sel, A.sel + files.length).some((pd) => pd.s) && !confirm('Importing replaces the sounds already on these pads. Continue?')) return;
+    let ok = 0, assigned = 0, last = null;
     try { await A.engine.start(); } catch { /* the decode below reports it */ }
     for (const f of files) {
       try {
         const buf = await A.engine.ctx.decodeAudioData(await f.arrayBuffer());
         const sid = await storeBuffer(A, buf, f.name.replace(/\.[^.]+$/, ''));
-        const pi = A.sel + ok;
-        if (pi < 12) { const pd = A.grp().pads[pi]; pd.s = sid; pd.start = 0; pd.end = 1; await A.engine.load(sid); }
+        if (assigned < room) { const pd = pads[A.sel + assigned]; pd.s = sid; pd.start = 0; pd.end = 1; await A.engine.load(sid); assigned++; }
         last = sid; ok++;
       } catch (err) { A.toast(`Could not import ${f.name}: ${err.message || 'unsupported file'}`); }
     }
     if (!ok) return;
     A.save(); A.refresh(); A.engine.preview(last);
-    A.toast(files.length > 1 ? `Imported ${ok} of ${files.length} files, from pad ${PAD_LABELS[A.sel]}` : `Imported to pad ${PAD_LABELS[A.sel]}`);
+    const extra = ok - assigned;
+    A.toast(files.length === 1 ? `Imported to pad ${PAD_LABELS[A.sel]}` : `Imported ${ok} of ${files.length}, ${assigned} assigned from pad ${PAD_LABELS[A.sel]}${extra ? `. ${extra} more are in the USER list` : ''}`, extra ? 5000 : 2200);
   };
   rec.querySelector('#del').onclick = async () => {
     await userSamples.remove(id); A.engine.forget(id);

@@ -56,7 +56,7 @@ select { background: var(--raise); border: 1px solid var(--line); border-radius:
 /* Start overlay */
 #start { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; background: rgba(10,10,12,.92); }
 #start.hide { display: none; }
-.start-card { text-align: center; max-width: 420px; padding: 24px; }
+.start-card { color: #f2f2ef; text-align: center; max-width: 420px; padding: 24px; }
 .start-card h1 { font-size: 40px; margin: 0 0 8px; letter-spacing: .08em; }
 
 /* Top bar */
@@ -188,7 +188,7 @@ canvas.wave { width: 100%; height: 110px; background: var(--well); border: 1px s
 .scenebox { border: 1px solid var(--line); border-radius: var(--r-m); padding: 10px; margin-bottom: 8px; }
 table.kv { border-collapse: collapse; font-size: 12px; } table.kv td { padding: 3px 12px 3px 0; color: var(--dim); } table.kv td:first-child { color: var(--text); }
 
-#toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translate(-50%, 20px); background: var(--toast); border: 1px solid var(--line); padding: 10px 16px; border-radius: var(--r-m); opacity: 0; pointer-events: none; transition: .2s; z-index: 60; max-width: 80vw; }
+#toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translate(-50%, 20px); background: var(--toast); color: #f2f2ef; border: 1px solid var(--line); padding: 10px 16px; border-radius: var(--r-m); opacity: 0; pointer-events: none; transition: .2s; z-index: 60; max-width: 80vw; }
 #toast.show { opacity: 1; transform: translate(-50%, 0); }
 
 /* Phone layer (iPhone portrait and landscape). iPad and desktop keep the layout above.
