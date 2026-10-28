@@ -15,7 +15,7 @@ export const A = window.A = {
   catalogue: [], byId: new Map(), undo: new UndoStack(), lastUndoPush: 0,
 };
 
-A.settings = Object.assign({ pi: 1, quantise: '1/16', metronome: false, countIn: true, velMode: 'fixed', master: 0.9, scale: 'chromatic', theme: 'dark', layout: 'auto' }, storage.get('ko.settings', {}));
+A.settings = Object.assign({ pi: 1, quantise: '1/16', metronome: false, countIn: true, velMode: 'fixed', master: 0.9, scale: 'chromatic', theme: 'light', layout: 'hardware' }, storage.get('ko.settings', {}));
 
 // ---- helpers -------------------------------------------------------------------
 A.toast = (msg, ms = 2200) => {
@@ -213,18 +213,14 @@ $('#slider').replaceWith(slider); slider.id = 'slider';
 $('#sideKeys').addEventListener('click', () => $('#btnKeys').click());
 $('#sideFader').addEventListener('click', () => { A.tab = 'MIX'; setView('panel'); });
 
-// Theme and layout. HARDWARE is a portrait layout laid out like the machine. It is not used on a short landscape phone.
-const THEME_COLOURS = { dark: '#16171a', light: '#cfd1d2', black: '#121212' };
-const shortLandscape = matchMedia('(max-height: 500px) and (orientation: landscape)');
+// Theme and layout classes live on <html> (js/look.js). HARDWARE is not used on a short landscape phone.
+// An unknown theme or layout in the saved settings falls back to the default, so the LOOK buttons show what is in use.
 A.applyLook = () => {
-  const root = document.documentElement, was = A.hw;
-  root.dataset.theme = THEME_COLOURS[A.settings.theme] ? A.settings.theme : 'dark';
-  document.querySelector('meta[name="theme-color"]').content = THEME_COLOURS[root.dataset.theme];
-  A.hw = A.settings.layout === 'hardware' && !shortLandscape.matches;
-  $('#app').classList.toggle('lay-hw', A.hw);
+  const was = A.hw, r = KoLook.apply(A.settings);
+  A.settings.theme = r.theme; A.settings.layout = r.layout; A.hw = r.hw;
   if (A.project) { if (was !== A.hw) setView('pads'); A.refresh(); }
 };
-shortLandscape.addEventListener('change', () => A.applyLook());
+for (const q of [KoLook.PHONE, KoLook.SHORT]) matchMedia(q).addEventListener('change', () => A.applyLook());
 
 A.renderPanel = () => {
   A.refreshDials?.(); slider.setValue(A.settings.master);
@@ -433,14 +429,16 @@ $('#tabs').prepend(padsBtn);
 // Phone pop-ups: the header extras (...) and the TOOLS sheet. Tapping anywhere else closes them and still reaches the pad.
 const popups = [
   { btn: $('#btnMore'), box: $('#top'), cls: 'open', inside: '#top' },
-  { btn: $('#btnTools'), box: $('#modes'), cls: 'sheet', inside: '#modesMore, #btnTools' },
+  { btn: $('#btnTools'), box: $('#modes'), cls: 'sheet', inside: '#modesMore, #btnTools', onOpen: (box) => box.style.setProperty('--sheet-b', `${innerHeight - box.getBoundingClientRect().top + 8}px`) },
 ];
 function closePopups(except) {
   for (const p of popups) if (p !== except) { p.box.classList.remove(p.cls); p.btn.setAttribute('aria-expanded', 'false'); }
 }
 for (const p of popups) p.btn.addEventListener('click', () => {
   closePopups(p);
-  p.btn.setAttribute('aria-expanded', String(p.box.classList.toggle(p.cls)));
+  const open = p.box.classList.toggle(p.cls);
+  if (open) p.onOpen?.(p.box);
+  p.btn.setAttribute('aria-expanded', String(open));
 });
 addEventListener('pointerdown', (e) => {
   for (const p of popups) if (p.box.classList.contains(p.cls) && !e.target.closest(p.inside)) closePopups();

@@ -191,104 +191,92 @@ table.kv { border-collapse: collapse; font-size: 12px; } table.kv td { padding: 
 #toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translate(-50%, 20px); background: var(--toast); color: #f2f2ef; border: 1px solid var(--line); padding: 10px 16px; border-radius: var(--r-m); opacity: 0; pointer-events: none; transition: .2s; z-index: 60; max-width: 80vw; }
 #toast.show { opacity: 1; transform: translate(-50%, 0); }
 
-/* Phone layer (iPhone portrait and landscape). iPad and desktop keep the layout above.
-   The bottom bar (a right-hand rail in landscape) switches between the pads and the panels.
-   Rarely used header and mode controls sit behind the ... and TOOLS buttons. */
-@media (max-width: 600px) and (orientation: portrait), (max-height: 500px) and (orientation: landscape) {
-  :root { --bar: 56px; --inset-b: env(safe-area-inset-bottom); }
-  html, body { overflow: hidden; }
-  #app { height: 100dvh; min-height: 0; padding-bottom: 0; }
-  .phone-only { display: inline-flex; align-items: center; justify-content: center; }
-  .btn, select { min-height: 44px; }
-  .btn.small { min-height: 44px; min-width: 44px; }
-  .seg button { min-height: 40px; }
-  .chips .btn { min-height: 36px; }
+/* Compact layout: phones, and the HARDWARE layout. JS sets .compact on <html> (js/look.js): on a phone-sized screen or when HARDWARE is on.
+   A bottom bar (a right-hand rail in landscape) switches between the pads and the panels. Rarely used header and mode controls sit behind the ... and TOOLS buttons. */
+html.compact { --bar: 56px; --inset-b: env(safe-area-inset-bottom); }
+html.compact, html.compact body { overflow: hidden; }
+html.compact #app { height: 100dvh; min-height: 0; padding-bottom: 0; }
+html.compact .phone-only { display: inline-flex; align-items: center; justify-content: center; }
+html.compact .btn, html.compact select { min-height: 44px; }
+html.compact .btn.small { min-height: 44px; min-width: 44px; }
+html.compact .seg button { min-height: 40px; }
+html.compact .chips .btn { min-height: 36px; }
+/* Header: one row, extras behind the ... button */
+html.compact #top { flex-wrap: wrap; gap: 6px 8px; padding: 6px 10px; position: relative; z-index: 20; }
+html.compact #top::after { content: ""; order: 9; flex-basis: 100%; height: 0; }
+html.compact .brand, html.compact #top .spacer, html.compact #bpmBox .lab { display: none; }
+html.compact .transport, html.compact #bpmBox { display: contents; }
+html.compact #btnStop, html.compact #btnPlay, html.compact #btnRec { order: 1; }
+html.compact #bpmDn, html.compact #bpmVal, html.compact #bpmUp { order: 2; }
+html.compact #bpmVal { min-width: 48px; }
+html.compact #btnMore { order: 3; margin-left: auto; }
+html.compact #top .extra { display: none; order: 10; }
+html.compact #top.open .extra { display: inline-flex; align-items: center; gap: 6px; }
+html.compact #top.open #btnMore, html.compact #btnTools[aria-expanded="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+/* Views */
+html.compact .v-pads #panel { display: contents; }
+html.compact .v-pads #tabBody, html.compact .v-panel #deck { display: none; }
+html.compact main { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); gap: 0; padding: 8px 10px calc(var(--bar) + var(--inset-b) + 8px); }
+html.compact #deck, html.compact #panel { height: 100%; min-height: 0; }
+html.compact #panel { border-radius: var(--r-m); }
+html.compact .padwrap { height: auto; min-height: 0; }
+html.compact #groups { width: 48px; }
+/* Bottom bar */
+html.compact #tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; background: var(--body); border-top: 1px solid var(--line); border-bottom: 0; padding: 0 env(safe-area-inset-right) var(--inset-b) env(safe-area-inset-left); overflow: visible; }
+html.compact #tabs button { min-height: var(--bar); flex: 1 1 0; min-width: 0; padding: 0; font-size: 10px; letter-spacing: .02em; border-bottom: 0; border-top: 3px solid transparent; }
+html.compact #tabs button.on, html.compact #tabs [data-view].on { border-top-color: var(--accent); }
+html.compact .v-pads #tabs button[data-tab] { color: var(--dim); border-top-color: transparent; }
+html.compact .v-pads #tabs [data-view="pads"] { color: var(--text); border-top-color: var(--accent); }
+html.compact .v-panel #tabs [data-view="pads"] { color: var(--dim); border-top-color: transparent; }
+/* Mode strip: pattern, bars, KEYS, REPEAT, ERASE, UNDO, TOOLS */
+html.compact #modes { display: block; margin-top: 8px; }
+html.compact #modesMain { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 6px; }
+html.compact #modesMain > .cell:nth-child(-n+2) { grid-column: span 5; justify-content: space-between; }
+html.compact #modesMain .cell { display: flex; align-items: center; gap: 4px; }
+html.compact #modesMain .cell .val { min-width: 24px; flex: 1; }
+html.compact #modesMain .cell.keys, html.compact #modesMain .cell.hold { display: contents; }
+html.compact #modesMain .keys .btn, html.compact #modesMain .hold .btn, html.compact #btnTools { grid-column: span 2; padding: 0 2px; font-size: 11px; letter-spacing: .02em; }
+html.compact #modes i { display: none; }
+/* TOOLS sheet */
+html.compact #modesMore { display: none; }
+html.compact #modes.sheet #modesMore { display: flex; flex-direction: column; gap: 10px; position: fixed; z-index: 25; left: 8px; right: 8px; bottom: var(--sheet-b, calc(var(--bar) + var(--inset-b) + 8px)); max-height: 60dvh; overflow: auto; padding: 12px; background: var(--body); border: 1px solid var(--line); border-radius: var(--r-l); box-shadow: 0 8px 30px #000a; }
+html.compact #modesMore .cell { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+html.compact #modesMore .cell .lab { min-width: 96px; }
+html.compact #modesMore .cell .btn { flex: 1 1 auto; }
+html.compact #modesMore .cell .val { min-width: 44px; }
+/* Panels */
+html.compact .sc { min-width: 28px; height: 40px; }
+html.compact .steplab { height: 40px; min-width: 64px; max-width: 84px; padding: 0 6px; }
+html.compact .mix { gap: 6px; }
+html.compact .fader { width: 52px; height: min(240px, 36dvh); }
+html.compact .chan input[type=range] { width: 60px !important; }
+html.compact .knobs { gap: 8px; }
+html.compact .knob { width: 96px; }
+html.compact .seg { max-width: 100%; overflow-x: auto; }
+html.compact .seg button { flex: none; }
+html.compact #toast { bottom: calc(var(--bar) + var(--inset-b) + 16px); }
 
-  /* Header: one row, extras behind the ... button */
-  #top { flex-wrap: wrap; gap: 6px 8px; padding: 6px 10px; position: relative; z-index: 20; }
-  #top::after { content: ""; order: 9; flex-basis: 100%; height: 0; }
-  .brand, #top .spacer, #bpmBox .lab { display: none; }
-  .transport, #bpmBox { display: contents; }
-  #btnStop, #btnPlay, #btnRec { order: 1; }
-  #bpmDn, #bpmVal, #bpmUp { order: 2; }
-  #bpmVal { min-width: 48px; }
-  #btnMore { order: 3; margin-left: auto; }
-  #top .extra { display: none; order: 10; }
-  #top.open .extra { display: inline-flex; align-items: center; gap: 6px; }
-  #top.open #btnMore, #btnTools[aria-expanded="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
-
-  /* Views */
-  .v-pads #panel { display: contents; }
-  .v-pads #tabBody, .v-panel #deck { display: none; }
-  main { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); gap: 0; padding: 8px 10px calc(var(--bar) + var(--inset-b) + 8px); }
-  #deck, #panel { height: 100%; min-height: 0; }
-  #panel { border-radius: var(--r-m); }
-  .padwrap { height: auto; min-height: 0; }
-  #groups { width: 48px; }
-
-  /* Bottom bar */
-  #tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; background: var(--body); border-top: 1px solid var(--line); border-bottom: 0;
-    padding: 0 env(safe-area-inset-right) var(--inset-b) env(safe-area-inset-left); overflow: visible; }
-  #tabs button { min-height: var(--bar); flex: 1 1 0; min-width: 0; padding: 0; font-size: 10px; letter-spacing: .02em; border-bottom: 0; border-top: 3px solid transparent; }
-  #tabs button.on, #tabs [data-view].on { border-top-color: var(--accent); }
-  .v-pads #tabs button[data-tab] { color: var(--dim); border-top-color: transparent; }
-  .v-pads #tabs [data-view="pads"] { color: var(--text); border-top-color: var(--accent); }
-  .v-panel #tabs [data-view="pads"] { color: var(--dim); border-top-color: transparent; }
-
-  /* Mode strip: pattern, bars, KEYS, REPEAT, ERASE, UNDO, TOOLS */
-  #modes { display: block; margin-top: 8px; }
-  #modesMain { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 6px; }
-  #modesMain > .cell:nth-child(-n+2) { grid-column: span 5; justify-content: space-between; }
-  #modesMain .cell { display: flex; align-items: center; gap: 4px; }
-  #modesMain .cell .val { min-width: 24px; flex: 1; }
-  #modesMain .cell.keys, #modesMain .cell.hold { display: contents; }
-  #modesMain .keys .btn, #modesMain .hold .btn, #btnTools { grid-column: span 2; padding: 0 2px; font-size: 11px; letter-spacing: .02em; }
-  #modes i { display: none; }
-
-  /* TOOLS sheet */
-  #modesMore { display: none; }
-  #modes.sheet #modesMore { display: flex; flex-direction: column; gap: 10px; position: fixed; z-index: 25; left: 8px; right: 8px;
-    bottom: calc(var(--bar) + var(--inset-b) + 8px); max-height: 60dvh; overflow: auto; padding: 12px; background: var(--body);
-    border: 1px solid var(--line); border-radius: var(--r-l); box-shadow: 0 8px 30px #000a; }
-  #modesMore .cell { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-  #modesMore .cell .lab { min-width: 96px; }
-  #modesMore .cell .btn { flex: 1 1 auto; }
-  #modesMore .cell .val { min-width: 44px; }
-
-  /* Panels */
-  .sc { min-width: 28px; height: 40px; }
-  .steplab { height: 40px; min-width: 64px; max-width: 84px; padding: 0 6px; }
-  .mix { gap: 6px; }
-  .fader { width: 52px; height: min(240px, 36dvh); }
-  .chan input[type=range] { width: 60px !important; }
-  .knobs { gap: 8px; }
-  .knob { width: 96px; }
-  .seg { max-width: 100%; overflow-x: auto; }
-  .seg button { flex: none; }
-  #toast { bottom: calc(var(--bar) + var(--inset-b) + 16px); }
-}
-
+/* Short landscape (phone on its side): pads on the left, controls on the right, tabs as a rail. */
 @media (max-height: 500px) and (orientation: landscape) {
-  #app { padding-right: calc(var(--bar) + 8px + env(safe-area-inset-right)); }
-  #top { padding: 4px 10px; }
-  #tabs { left: auto; top: 0; bottom: 0; right: 0; width: calc(var(--bar) + 8px + env(safe-area-inset-right)); flex-direction: column;
-    border-top: 0; border-left: 1px solid var(--line); padding: env(safe-area-inset-top) env(safe-area-inset-right) var(--inset-b) 0; }
-  #tabs button { border-top: 0; border-left: 3px solid transparent; min-height: 0; }
-  #tabs button.on, #tabs [data-view].on { border-top-color: transparent; border-left-color: var(--accent); }
-  .v-pads #tabs button[data-tab] { border-left-color: transparent; }
-  .v-pads #tabs [data-view="pads"] { border-left-color: var(--accent); }
-  .v-panel #tabs [data-view="pads"] { border-left-color: transparent; }
-  main { padding: 6px 10px calc(var(--inset-b) + 6px) 10px; }
-  #deck { display: grid; grid-template-columns: minmax(0, 1fr) minmax(250px, 300px); grid-template-rows: auto minmax(0, 1fr); gap: 8px; }
-  .v-panel #deck { display: none; }
-  .padwrap { grid-column: 1; grid-row: 1 / 3; }
-  #lcd { grid-column: 2; grid-row: 1; padding: 6px 10px 4px; }
-  #lcd .l1 { font-size: 13px; gap: 8px; }
-  #modes { grid-column: 2; grid-row: 2; margin-top: 0; overflow: auto; }
-  #modesMain { grid-template-columns: repeat(6, minmax(0, 1fr)); }
-  #modesMain > .cell:nth-child(-n+2) { grid-column: span 6; }
-  #modes.sheet #modesMore { left: auto; right: calc(var(--bar) + 16px + env(safe-area-inset-right)); top: 56px; bottom: 8px; width: 300px; max-height: none; }
-  #toast { bottom: calc(var(--inset-b) + 16px); }
+  html.compact #app { padding-right: calc(var(--bar) + 8px + env(safe-area-inset-right)); }
+  html.compact #top { padding: 4px 10px; }
+  html.compact #tabs { left: auto; top: 0; bottom: 0; right: 0; width: calc(var(--bar) + 8px + env(safe-area-inset-right)); flex-direction: column; border-top: 0; border-left: 1px solid var(--line); padding: env(safe-area-inset-top) env(safe-area-inset-right) var(--inset-b) 0; }
+  html.compact #tabs button { border-top: 0; border-left: 3px solid transparent; min-height: 0; }
+  html.compact #tabs button.on, html.compact #tabs [data-view].on { border-top-color: transparent; border-left-color: var(--accent); }
+  html.compact .v-pads #tabs button[data-tab] { border-left-color: transparent; }
+  html.compact .v-pads #tabs [data-view="pads"] { border-left-color: var(--accent); }
+  html.compact .v-panel #tabs [data-view="pads"] { border-left-color: transparent; }
+  html.compact main { padding: 6px 10px calc(var(--inset-b) + 6px) 10px; }
+  html.compact #deck { display: grid; grid-template-columns: minmax(0, 1fr) minmax(250px, 300px); grid-template-rows: auto minmax(0, 1fr); gap: 8px; }
+  html.compact .v-panel #deck { display: none; }
+  html.compact .padwrap { grid-column: 1; grid-row: 1 / 3; }
+  html.compact #lcd { grid-column: 2; grid-row: 1; padding: 6px 10px 4px; }
+  html.compact #lcd .l1 { font-size: 13px; gap: 8px; }
+  html.compact #modes { grid-column: 2; grid-row: 2; margin-top: 0; overflow: auto; }
+  html.compact #modesMain { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  html.compact #modesMain > .cell:nth-child(-n+2) { grid-column: span 6; }
+  html.compact #modes.sheet #modesMore { left: auto; right: calc(var(--bar) + 16px + env(safe-area-inset-right)); top: 56px; bottom: 8px; width: 300px; max-height: none; }
+  html.compact #toast { bottom: calc(var(--inset-b) + 16px); }
 }
 
 /* Knobs: the X knob is orange and the Y knob is dark, as on the hardware. */
@@ -301,73 +289,46 @@ table.kv { border-collapse: collapse; font-size: 12px; } table.kv td { padding: 
 
 /* HARDWARE layout: a portrait layout laid out like the machine. Tabs along the top, then the display, two dials,
    the pads with a side strip (volume slider, FADER, KEYS), and the transport along the bottom.
-   Switched on with .lay-hw on #app (PROJECT tab, LAYOUT). It overrides the phone layer above, so it works at any width. */
+   JS sets .hw (and .compact) on <html>. It builds on the compact rules above and only changes what differs. */
 .hw-only { display: none; }
-#app.lay-hw { --bar: 64px; display: flex; flex-direction: column; height: 100dvh; min-height: 0; width: 100%; max-width: 760px; margin: 0 auto;
-  background: var(--body); border-left: var(--bw) solid var(--line); border-right: var(--bw) solid var(--line); overflow: hidden; }
-.lay-hw .hw-only { display: flex; }
-.lay-hw .phone-only { display: inline-flex; align-items: center; justify-content: center; }
-.lay-hw .btn, .lay-hw select { min-height: 44px; }
-.lay-hw .btn.small { min-height: 44px; min-width: 44px; }
+html.hw .hw-only { display: flex; }
+html.hw { --bar: 64px; }
+html.hw #app { display: flex; flex-direction: column; width: 100%; max-width: 760px; margin: 0 auto; background: var(--body);
+  border-left: var(--bw) solid var(--line); border-right: var(--bw) solid var(--line); overflow: hidden; }
 
 /* Transport at the bottom */
-#app.lay-hw #top { order: 2; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px; padding: 8px 10px; position: relative; z-index: 20;
-  border-top: var(--bw) solid var(--line); border-bottom: 0; background: var(--body); }
-#app.lay-hw #top::after { content: ""; order: 9; flex-basis: 100%; height: 0; }
-#app.lay-hw .brand, #app.lay-hw #top .spacer, #app.lay-hw #bpmBox .lab { display: none; }
-#app.lay-hw .transport, #app.lay-hw #bpmBox { display: contents; }
-#app.lay-hw #btnStop, #app.lay-hw #btnPlay, #app.lay-hw #btnRec { order: 1; min-width: 48px; min-height: 52px; font-size: 18px; }
-#app.lay-hw #bpmDn, #app.lay-hw #bpmVal, #app.lay-hw #bpmUp { order: 2; }
-#app.lay-hw #bpmVal { min-width: 56px; font-size: 18px; }
-#app.lay-hw #btnMore { order: 3; margin-left: 0; }
-#app.lay-hw #top .extra { display: none; order: 10; }
-#app.lay-hw #top.open .extra { display: inline-flex; align-items: center; gap: 6px; }
-#app.lay-hw #top.open #btnMore, #app.lay-hw #btnTools[aria-expanded="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+html.hw #top { order: 2; justify-content: space-between; gap: 6px; padding: 8px 10px; border-top: var(--bw) solid var(--line); border-bottom: 0; background: var(--body); }
+html.hw #btnStop, html.hw #btnPlay, html.hw #btnRec { min-width: 48px; min-height: 52px; font-size: 18px; }
+html.hw #bpmVal { min-width: 56px; font-size: 18px; }
+html.hw #btnMore { margin-left: 0; }
 
 /* Tabs along the top */
-#app.lay-hw main { order: 1; display: flex; flex-direction: column; gap: 8px; padding: 8px 10px; flex: 1; min-height: 0; }
-#app.lay-hw #panel { display: contents; }
-#app.lay-hw #tabs { order: -1; position: static; flex: none; display: flex; padding: 0; z-index: auto; overflow: hidden;
+html.hw main { order: 1; display: flex; flex-direction: column; gap: 8px; padding: 8px 10px; flex: 1; min-height: 0; }
+html.hw #panel { display: contents; }
+html.hw #tabs { order: -1; position: static; flex: none; display: flex; padding: 0; z-index: auto; overflow: hidden;
   background: var(--raise); border: var(--bw) solid var(--line); border-radius: var(--r-s); }
-#app.lay-hw #tabs button { min-height: 44px; flex: 1 1 0; min-width: 0; padding: 0 2px; font-size: 11px; letter-spacing: .03em; color: var(--dim);
-  border: 0; border-bottom: 3px solid transparent; border-right: var(--bw) solid var(--line); }
-#app.lay-hw #tabs button:last-child { border-right: 0; }
-#app.lay-hw.v-pads #tabs [data-view="pads"], #app.lay-hw.v-panel #tabs button.on { color: var(--text); border-bottom-color: var(--accent); }
-#app.lay-hw.v-pads #tabs button.on[data-tab] { color: var(--dim); border-bottom-color: transparent; }
-#app.lay-hw.v-pads #tabBody, #app.lay-hw.v-panel #deck { display: none; }
-#app.lay-hw.v-panel #tabBody { display: block; flex: 1; min-height: 0; background: var(--body); border: var(--bw) solid var(--line); border-radius: var(--r-s); }
+html.hw #tabs button { min-height: 44px; font-size: 11px; letter-spacing: .03em; color: var(--dim); padding: 0 2px; border: 0; border-bottom: 3px solid transparent; border-right: var(--bw) solid var(--line); }
+html.hw #tabs button:last-child { border-right: 0; }
+html.hw .v-pads #tabs [data-view="pads"], html.hw .v-panel #tabs button.on { color: var(--text); border-bottom-color: var(--accent); }
+html.hw .v-pads #tabs button.on[data-tab] { color: var(--dim); border-bottom-color: transparent; }
+html.hw .v-panel #tabBody { display: block; flex: 1; min-height: 0; background: var(--body); border: var(--bw) solid var(--line); border-radius: var(--r-s); }
 
 /* Deck: display, dials, pads with side strip, mode strip */
-#app.lay-hw #deck { flex: 1; min-height: 0; height: auto; display: flex; flex-direction: column; gap: 8px; }
-#app.lay-hw #dials { flex: none; align-items: center; justify-content: space-between; gap: 10px; padding: 0 8%; }
-#app.lay-hw #dials .knob { width: 78px; }
-#app.lay-hw #dials .knob svg { width: 60px; height: 60px; margin-bottom: 2px; }
-#app.lay-hw #dials .kn { font-size: 11px; }
-#app.lay-hw #dials .kl { min-height: 13px; font-size: 10px; }
-#app.lay-hw #fxCycle { min-width: 96px; }
-#app.lay-hw .padwrap { flex: 1; min-height: 0; height: auto; gap: 8px; }
-#app.lay-hw #groups { width: 48px; }
-#app.lay-hw #side { flex: none; width: 56px; flex-direction: column; align-items: stretch; gap: 8px; }
-#app.lay-hw #side .lab { text-align: center; }
-#app.lay-hw #side .fader, #app.lay-hw #slider { flex: 1; width: 100%; height: auto; min-height: 80px; }
-#app.lay-hw #side .btn { padding: 0; font-size: 11px; letter-spacing: .02em; }
-#app.lay-hw #modes { display: block; margin: 0; }
-#app.lay-hw #modesMain { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px; }
-#app.lay-hw #modesMain > .cell:nth-child(-n+2) { grid-column: span 4; justify-content: space-between; }
-#app.lay-hw #modesMain .cell { display: flex; align-items: center; gap: 4px; }
-#app.lay-hw #modesMain .cell .val { min-width: 24px; flex: 1; }
-#app.lay-hw #modesMain .cell.keys { display: none; }
-#app.lay-hw #modesMain .cell.hold { display: contents; }
-#app.lay-hw #modesMain .hold .btn, #app.lay-hw #btnTools { grid-column: span 2; padding: 0 2px; font-size: 11px; letter-spacing: .02em; }
-#app.lay-hw #modes i { display: none; }
-#app.lay-hw #modesMore { display: none; }
-#app.lay-hw #modes.sheet #modesMore { display: flex; flex-direction: column; gap: 10px; position: fixed; z-index: 25; left: 50%; transform: translateX(-50%);
-  width: min(740px, calc(100% - 16px)); bottom: calc(var(--bar) + env(safe-area-inset-bottom) + 14px); max-height: 60dvh; overflow: auto; padding: 12px;
-  background: var(--body); border: var(--bw) solid var(--line); border-radius: var(--r-l); box-shadow: 0 8px 30px #000a; }
-#app.lay-hw #modesMore .cell { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-#app.lay-hw #modesMore .cell .lab { min-width: 96px; }
-#app.lay-hw #modesMore .cell .btn { flex: 1 1 auto; }
-#app.lay-hw .sc { min-width: 28px; height: 40px; }
-#app.lay-hw .steplab { height: 40px; min-width: 64px; max-width: 84px; padding: 0 6px; }
-#app.lay-hw ~ #toast { bottom: calc(var(--bar) + env(safe-area-inset-bottom) + 24px); }
-@media (max-width: 430px) { #app.lay-hw #tabs button { font-size: 10px; letter-spacing: 0; } }
+html.hw #deck { flex: 1; height: auto; gap: 8px; }
+html.hw #modes { margin: 0; }
+html.hw #dials { flex: none; align-items: center; justify-content: space-between; gap: 10px; padding: 0 8%; }
+html.hw #dials .knob { width: 78px; }
+html.hw #dials .knob svg { width: 60px; height: 60px; margin-bottom: 2px; }
+html.hw #dials .kn { font-size: 11px; }
+html.hw #dials .kl { min-height: 13px; font-size: 10px; }
+html.hw #fxCycle { min-width: 96px; }
+html.hw .padwrap { flex: 1; gap: 8px; }
+html.hw #side { flex: none; width: 56px; flex-direction: column; align-items: stretch; gap: 8px; }
+html.hw #side .lab { text-align: center; }
+html.hw #side .fader, html.hw #slider { flex: 1; width: 100%; height: auto; min-height: 80px; }
+html.hw #side .btn { padding: 0; font-size: 11px; letter-spacing: .02em; }
+html.hw #modesMain { grid-template-columns: repeat(8, minmax(0, 1fr)); }
+html.hw #modesMain > .cell:nth-child(-n+2) { grid-column: span 4; }
+html.hw #modesMain .cell.keys { display: none; }
+html.hw #modes.sheet #modesMore { left: 50%; right: auto; transform: translateX(-50%); width: min(740px, calc(100% - 16px)); }
+@media (max-width: 430px) { html.hw #tabs button { font-size: 10px; letter-spacing: 0; } }

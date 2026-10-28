@@ -8,6 +8,9 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 OUT="$ROOT/web/samples"
 mkdir -p "$OUT"
+# Two files with the same number would write the same FLAC, so stop before converting anything.
+dups="$(find "$1" -name '*.wav' -print0 | while IFS= read -r -d '' f; do b="$(basename "$f" .wav)"; n="${b%%_*}"; [[ "$n" =~ ^[0-9]+$ ]] && echo "$((10#$n))"; done | sort -n | uniq -d)"
+[ -z "$dups" ] || { echo "More than one file has the sample number: $(echo $dups). Rename them so each number is used once." >&2; exit 1; }
 find "$1" -name '*.wav' -print0 | while IFS= read -r -d '' f; do
   b="$(basename "$f" .wav)"; n="${b%%_*}"
   [[ "$n" =~ ^[0-9]+$ ]] && [ "$((10#$n))" -ge 1 ] && [ "$((10#$n))" -le 599 ] || { echo "Skipping $b: name must start with a number from 1 to 599" >&2; continue; }

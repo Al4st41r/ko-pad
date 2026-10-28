@@ -1,10 +1,10 @@
 // KO Pad service worker. Shell: stale-while-revalidate. Samples: cache-first.
-const VERSION = 'v11';
+const VERSION = 'v12';
 const SHELL = `kopad-shell-${VERSION}`;
 const SAMPLES = 'kopad-samples-v1';
 const ASSETS = [
   './', 'index.html', 'style.css', 'manifest.json', 'sw.js',
-  'js/app.js', 'js/audio.js', 'js/chop.js', 'js/data.js', 'js/model.js', 'js/offline.js', 'js/panels.js', 'js/seq.js', 'js/store.js',
+  'js/app.js', 'js/audio.js', 'js/chop.js', 'js/data.js', 'js/look.js', 'js/model.js', 'js/offline.js', 'js/panels.js', 'js/seq.js', 'js/store.js',
   'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png',
 ];
 

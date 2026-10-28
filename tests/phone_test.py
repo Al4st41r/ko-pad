@@ -1,4 +1,4 @@
-"""Phone layout checks at iPhone sizes (portrait and landscape).
+"""Phone layout checks (AUTO layout; HARDWARE is covered by look_test.py) at iPhone sizes (portrait and landscape).
 
 Run:  EP133_URL=<address of the served web folder> uv run --with playwright python tests/phone_test.py
 Set CHROMIUM to a headless_shell path if playwright's own browser is not installed.
@@ -22,6 +22,7 @@ with sync_playwright() as p:
     b = p.chromium.launch(**kw)
     for label, (w, h) in {"portrait 393": (393, 852), "portrait 375": (375, 667), "landscape 852": (852, 393), "landscape 667": (667, 375)}.items():
         ctx = b.new_context(viewport={"width": w, "height": h}, has_touch=True, is_mobile=True)
+        ctx.add_init_script("localStorage.setItem('ko.settings', JSON.stringify({layout: 'auto'}))")
         page = ctx.new_page(); page.goto(URL); page.wait_for_selector("#startBtn")
         page.evaluate("document.getElementById('start').classList.add('hide')")
         check(f"{label}: no page scroll", page.evaluate("document.documentElement.scrollWidth <= innerWidth && document.documentElement.scrollHeight <= innerHeight"))
@@ -41,12 +42,12 @@ with sync_playwright() as p:
         check(f"{label}: PADS returns to the pads", page.is_visible("#pads") and not page.is_visible("#tabBody"))
         page.click("#btnTools")
         check(f"{label}: TOOLS opens the sheet", page.is_visible("#btnCorrAll") and page.is_visible("#beatUp"))
-        page.mouse.click(pad["x"] + 5, pad["y"] + 5)
+        page.mouse.click(5, 5)  # the header: the sheet can cover pads on a short screen
         check(f"{label}: tapping outside closes the sheet", not page.is_visible("#btnCorrAll"))
         page.click("#btnMore")
         check(f"{label}: ... reveals METRO, TAP and SWING", page.is_visible("#btnMetro") and page.is_visible("#bpmTap") and page.is_visible("#swing"))
         ctx.close()
-    ctx = b.new_context(viewport={"width": 1194, "height": 834}); page = ctx.new_page(); page.goto(URL); page.wait_for_selector("#startBtn")
+    ctx = b.new_context(viewport={"width": 1194, "height": 834}); ctx.add_init_script("localStorage.setItem('ko.settings', JSON.stringify({layout: 'auto'}))"); page = ctx.new_page(); page.goto(URL); page.wait_for_selector("#startBtn")
     page.evaluate("document.getElementById('start').classList.add('hide')")
     check("iPad: tab panel and pads both visible", page.is_visible("#tabBody") and page.is_visible("#pads"))
     check("iPad: phone-only buttons hidden", not page.is_visible("#btnMore") and not page.is_visible("#btnTools"))

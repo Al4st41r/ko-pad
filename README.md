@@ -123,8 +123,8 @@ Open the PROJECT tab and find LOOK. The choice is stored on the device.
 
 | Setting | Options |
 | --- | --- |
-| THEME | DARK (default). LIGHT follows the hardware: light grey body, dark grey and white keys, orange accent, 1px black outlines and tight corners. BLACK uses the same shapes in near black. |
-| LAYOUT | AUTO uses the layout for the screen size. HARDWARE is a portrait layout laid out like the machine. |
+| THEME | LIGHT (default) follows the hardware: light grey body, dark grey and white keys, orange accent, 1px black outlines and tight corners. BLACK uses the same shapes in near black. DARK is the original dark look with rounder corners. |
+| LAYOUT | HARDWARE (default) is a portrait layout laid out like the machine. AUTO uses a layout chosen from the screen size: pads beside a panel on a tablet or desktop, and a phone layout on a small screen. |
 
 HARDWARE layout, top to bottom.
 
@@ -184,7 +184,7 @@ The pads are the instrument. The panel has six tabs.
 
 ## Using it on an iPhone
 
-On screens up to 600 px wide (portrait) or 500 px high (landscape) the AUTO layout changes. The HARDWARE layout also works on a phone in portrait.
+The HARDWARE layout (the default) works on a phone in portrait. On a phone held in landscape, and in AUTO layout on screens up to 600 px wide, the phone layout is used instead.
 
 - A bottom bar (a rail on the right in landscape) switches between PADS and the STEP, SOUND, FX, MIX, SONG and PROJECT panels. Each panel takes the whole screen.
 - The top bar keeps stop, play, record and tempo. The ... button shows the project selector, METRO, TAP tempo, swing and the offline status.
@@ -222,6 +222,7 @@ ko-pad/
     js/store.js           localStorage and IndexedDB persistence
     js/panels.js          the six tabs and the knob and fader widgets
     js/app.js             state, deck, transport, themes and layouts, boot
+    js/look.js            theme and layout classes on <html>
     js/offline.js         service worker registration and download panel
     samples/              your own sounds (Route 2). Excluded from git.
     icons/
@@ -234,10 +235,10 @@ ko-pad/
 
 There is no build. Edit files in `web/` and reload.
 
-- Tests: `node --test tests/` checks the data model, including loading of bad project files. `EP133_URL=<address> uv run --with playwright python tests/browser_test.py` drives the real page (playback, song recording, undo, note repeat, offline reload) and needs a sample set installed. `tests/phone_test.py` checks the phone layouts and `tests/look_test.py` checks the themes and the HARDWARE layout. `tests/nosounds_test.py` runs the app with no sounds installed and tests multi-file import, and needs no sample set.
+- Tests: `node --test tests/` checks the data model, including loading of bad project files. `EP133_URL=<address> uv run --with playwright python tests/browser_test.py` drives the real page (playback, song recording, undo, note repeat, offline reload) and needs a sample set installed. `tests/phone_test.py` checks the phone layouts in AUTO and `tests/look_test.py` checks the themes and the HARDWARE layout. `tests/nosounds_test.py` runs the app with no sounds installed and tests multi-file import, and needs no sample set.
 - Service worker: bump `VERSION` in `web/sw.js` when you add or rename files, and add new files to its `ASSETS` list.
 - Data on the device: projects are in `localStorage` under `ko.proj.N`, settings under `ko.settings`, and imported or recorded sounds in the IndexedDB database `ko-samples`.
-- Themes are CSS custom properties set by `data-theme` on `<html>` (see the top of `web/style.css`). The HARDWARE layout is the `.lay-hw` block at the end of the same file.
+- Themes are CSS custom properties set by `data-theme` on `<html>` (see the top of `web/style.css`). `web/js/look.js` sets `data-theme`, `hw` and `compact` on `<html>` before first paint. `compact` covers phones and HARDWARE, and the HARDWARE block at the end of the stylesheet only adds what differs.
 
 ## Known limits
 

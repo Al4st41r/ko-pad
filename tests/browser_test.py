@@ -18,6 +18,7 @@ with sync_playwright() as p:
     if os.environ.get("CHROMIUM"): kw["executable_path"] = os.environ["CHROMIUM"]
     b = p.chromium.launch(**kw)
     ctx = b.new_context(viewport={"width": 1194, "height": 834})
+    ctx.add_init_script("localStorage.setItem('ko.settings', JSON.stringify({layout: 'auto'}))")
     pg = ctx.new_page()
     errs = []; pg.on("pageerror", lambda e: errs.append(str(e)[:120]))
     pg.goto(URL, wait_until="networkidle"); pg.evaluate("localStorage.clear()"); pg.reload(wait_until="networkidle")
