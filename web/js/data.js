@@ -39,7 +39,7 @@ export const USER_SAMPLE_MIN = 600;  // ids 1-599 are factory; 600-999 are user 
 export const USER_SAMPLE_MAX = 999;
 
 // Labels as printed on the hardware pads, in on-screen order.
-export const PAD_LABELS = ['7', '8', '9', '4', '5', '6', '1', '2', '3', '.', '0', 'ENTER'];
+export const PAD_LABELS = ['7', '8', '9', '4', '5', '6', '1', '2', '3', '.', '0', 'ENT'];
 
 export const GRIDS = {
   '1/4': 96, '1/8': 48, '1/8T': 32, '1/16': 24, '1/16T': 16, '1/32': 12,

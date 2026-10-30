@@ -1,6 +1,6 @@
 // Look-ahead sequencer. Ticks are 1/96 of a quarter note; scheduling uses the audio clock.
 import { PPQ, BAR_TICKS, GRIDS } from './data.js';
-import { getPattern, buildIndex, buildAutoIndex, patternTicks, barTicks, addEvent, addAuto, quantiseTick } from './model.js';
+import { getPattern, buildIndex, buildAutoIndex, patternTicks, barTicks, loopPosition, addEvent, addAuto, quantiseTick } from './model.js';
 
 const LOOKAHEAD = 0.12;
 const INTERVAL = 25;
@@ -114,6 +114,11 @@ export class Sequencer {
   _barTicks() {
     for (let g = 0; g < 4; g++) { const p = this._patFor(g); if (p) return barTicks(p); }
     return BAR_TICKS;
+  }
+
+  // Playhead as shown on the counter: wraps at the loop length (longest sounding pattern).
+  displayTick(pos) {
+    return loopPosition(this.songMode ? pos - this.sceneStart : pos, this._sceneLen());
   }
 
   _sceneLen() {

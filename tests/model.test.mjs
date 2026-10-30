@@ -322,3 +322,12 @@ test('nextEmptyPattern skips the current pattern', () => {
   assert.equal(M.nextEmptyPattern(p, 0, 5), 6);
   assert.equal(M.nextEmptyPattern(p, 0, 99), 1);
 });
+
+test('loopPosition wraps the counter at the pattern length', () => {
+  const bar = 384;
+  assert.equal(M.loopPosition(bar * 3 + 96, bar), 96);                 // one bar pattern: always bar 1
+  assert.equal(M.ticksToPosition(M.loopPosition(bar * 5, bar), bar).bar, 1);
+  assert.equal(M.ticksToPosition(M.loopPosition(bar * 3 + 10, bar * 2), bar).bar, 2); // two bar pattern runs 1 to 2
+  assert.equal(M.ticksToPosition(M.loopPosition(bar * 4, bar * 2), bar).bar, 1);
+  assert.equal(M.loopPosition(-96, bar), -96);                          // count-in is untouched
+});

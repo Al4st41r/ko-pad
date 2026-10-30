@@ -229,6 +229,11 @@ export function buildIndex(pat) {
   return m;
 }
 
+// Playhead position within the looping pattern, so a one bar pattern always reads bar 1 and a two bar pattern runs 1 to 2.
+export function loopPosition(tick, loopTicks) {
+  return tick < 0 || !(loopTicks > 0) ? tick : tick % loopTicks;
+}
+
 export function ticksToPosition(tick, bar = BAR_TICKS) {
   if (tick < 0) return { bar: 0, beat: 0, sixteenth: 0 };
   return {

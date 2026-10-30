@@ -376,6 +376,19 @@ const hold = (id, key) => {
   for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) b.addEventListener(ev, () => { A[key] = false; A.refreshModes(); });
 };
 hold('#btnRepeat', 'repeat');
+// While SHIFT is down each control it changes shows what it will do (see html.shift [data-shift] in style.css).
+const SHIFT_LABELS = {
+  '#patDn': 'BAR -', '#patUp': 'BAR +', '#barDn': 'HALF', '#barUp': 'x2', '#btnErase': 'PROJECT', '#btnSample': 'CHOP',
+  '#sideFader': 'RESET VOL', '#btnPlay': 'RESTART', '#btnRepeat': 'LATCH', '#timingSel': 'CORRECT ALL',
+};
+for (const [sel, label] of Object.entries(SHIFT_LABELS)) {
+  const el = $(sel); if (!el) continue;
+  (el.tagName === 'SELECT' ? el.parentElement : el).dataset.shift = label;
+}
+['UNDO', 'COPY', 'PASTE'].forEach((label, i) => { if (groupEls[i + 1]) groupEls[i + 1].dataset.shift = label; });
+const lcdShift = document.createElement('span'); lcdShift.id = 'lcdShift'; lcdShift.textContent = 'SHIFT';
+$('#lcd .l1').append(lcdShift);
+
 // SHIFT is held, like the hardware key. The Shift key on a keyboard does the same.
 const setShift = (on) => {
   if (A.shift === on) return;
@@ -541,7 +554,7 @@ function frame() {
   const el = lcdPos;
   if (pos === null) el.textContent = '--.-.-';
   else if (pos < 0) el.textContent = 'COUNT';
-  else { const p = ticksToPosition(Math.floor(pos), A.seq.countLen); el.textContent = `${String(p.bar).padStart(2, '0')}.${p.beat}.${p.sixteenth}`; }
+  else { const p = ticksToPosition(Math.floor(A.seq.displayTick(pos)), A.seq.countLen); el.textContent = `${String(p.bar).padStart(2, '0')}.${p.beat}.${p.sixteenth}`; }
   updateLeds(pos);
   meterEl.style.width = `${Math.min(100, A.engine.level() * 100)}%`;
   A.onFrame?.(pos);

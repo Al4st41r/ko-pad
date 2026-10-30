@@ -356,7 +356,15 @@ html.hw #lcd .poslab { font-size: 10px; }
 @media (max-width: 430px) { html.hw #lcdPos { font-size: 52px; } }
 html.compact:not(.hw) #lcdPos { font-size: 32px; }
 
-/* SHIFT: lit while held, and the controls it changes are marked. */
+/* SHIFT: lit while held; every control it changes shows what it will do. */
 .shiftbtn[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--on-accent); }
-html.shift #groups .btn:nth-child(n+2), html.shift #patDn, html.shift #patUp, html.shift #barDn, html.shift #barUp,
-html.shift #btnErase, html.shift #btnSample, html.shift #sideFader, html.shift #btnPlay { outline: 2px dashed var(--accent); outline-offset: -4px; }
+#lcdShift { display: none; background: var(--accent); color: var(--on-accent); padding: 0 6px; border-radius: 3px; }
+html.shift #lcdShift { display: inline-block; }
+html.shift [data-shift] { position: relative; }
+html.shift [data-shift]::after {
+  content: attr(data-shift); position: absolute; inset: 0; z-index: 3; pointer-events: none;
+  display: flex; align-items: center; justify-content: center; text-align: center; padding: 0 2px;
+  background: var(--accent); color: var(--on-accent); border-radius: inherit; outline: 2px solid var(--on-accent); outline-offset: -3px;
+  font: 700 11px/1.1 -apple-system, "Segoe UI", sans-serif; letter-spacing: .02em;
+}
+html.shift .cell[data-shift]::after { border-radius: var(--r-s); }
