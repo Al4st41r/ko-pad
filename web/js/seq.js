@@ -33,14 +33,14 @@ export class Sequencer {
   get project() { return this.host.project(); }
   get tickDur() { return 60 / (this.project.bpm * PPQ); }
 
-  start({ record = false } = {}) {
+  start({ record = false, countIn = this.countIn } = {}) {
     if (!this.engine.ctx) return;
     this.recording = record;
     if (this.playing) return;
     this.engine.setBpm(this.project.bpm);
     this.playing = true;
     this.countLen = this._barTicks();
-    this.tick = (record && this.countIn) ? -this.countLen : 0;
+    this.tick = (record && countIn) ? -this.countLen : 0;
     this.sceneStart = 0; this.songPos = 0;
     this.sceneOverride = null;
     if (this.songMode) this._enterScene(0);

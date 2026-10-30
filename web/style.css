@@ -6,6 +6,7 @@
   --well: #1a1b1e; --well2: #23252a; --grid: #2a2c31; --grid-beat: #50545e; --grid-bar: #70747e; --alt: #1f2024; --cur: #3a2a1d;
   --sel: #fff; --playhead: #fff; --cap: #e8e6e1; --toast: #000d; --erasing: #5a1c1c; --ok: #7bd88f; --ok-line: #2e5a3a; --shade: .35;
   --knob-base: #2d3036; --knob-cap: #3a3d45; --knob-line: #0c0d0f;
+  --led-a: #ff5a1f; --led-b: #35d07f; --led-c: #3fa9ff; --led-d: #ff4fd0;
   --r-s: 8px; --r-m: 10px; --r-l: 14px; --r-pill: 99px; --gap: 8px; --bw: 1px;
 }
 /* Themes. Set with data-theme on <html>. DARK is the default above.
@@ -82,7 +83,13 @@ main { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(380p
 /* LCD */
 #lcd { background: var(--lcd); color: var(--lcd-ink); border-radius: var(--r-s); padding: 8px 12px 6px; font-family: ui-monospace, "SF Mono", Menlo, monospace; box-shadow: inset 0 2px 6px rgba(0,0,0,var(--shade)); border: var(--bw) solid var(--pad-line); flex: none; }
 #lcd .l1 { display: flex; gap: 14px; font-weight: 700; font-size: 15px; }
-#lcd .right { margin-left: auto; }
+#lcd .lcd-main { display: flex; align-items: stretch; gap: 12px; }
+#lcd .lcd-info { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+#lcd .l1 { flex-wrap: wrap; }
+/* Step counter: large digits, the main thing on the display, as on the hardware. */
+#lcd .lcd-pos { flex: none; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; }
+#lcdPos { font-weight: 700; font-size: 44px; line-height: 1; letter-spacing: .04em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+#lcd .poslab { font-size: 9px; letter-spacing: .24em; opacity: .65; margin-top: 3px; }
 #lcd .l2 { font-size: 13px; opacity: .8; min-height: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .meter { height: 4px; background: rgba(0,0,0,.12); border-radius: var(--r-s); margin-top: 4px; overflow: hidden; }
 .meter i { display: block; height: 100%; width: 0; background: var(--lcd-ink); transition: width .05s linear; }
@@ -332,3 +339,24 @@ html.hw #modesMain > .cell:nth-child(-n+2) { grid-column: span 4; }
 html.hw #modesMain .cell.keys { display: none; }
 html.hw #modes.sheet #modesMore { left: 50%; right: auto; transform: translateX(-50%); width: min(740px, calc(100% - 16px)); }
 @media (max-width: 430px) { html.hw #tabs button { font-size: 10px; letter-spacing: 0; } }
+
+/* Pad LEDs: a dot in the corner. Dim ring = the pad has notes in this pattern; solid and glowing = a note on the current step. */
+.pad .led { position: absolute; right: 9px; bottom: 9px; width: 12px; height: 12px; border-radius: 50%; box-sizing: border-box;
+  border: 2px solid transparent; background: transparent; pointer-events: none; transition: background .06s, box-shadow .06s; }
+.pad .led.has { border-color: var(--led); opacity: .55; }
+.pad .led.hit { background: var(--led); border-color: var(--led); opacity: 1; box-shadow: 0 0 8px 2px var(--led); }
+.pad.lit .led.hit { box-shadow: 0 0 0 2px #fff; }
+.pad.rep::before { content: "REP"; position: absolute; left: 9px; bottom: 8px; font: 700 9px ui-monospace, Menlo, monospace; letter-spacing: .1em; color: var(--accent2); }
+
+/* HARDWARE: a taller display with a larger step counter. */
+html.hw #lcd { padding: 10px 14px 8px; }
+html.hw #lcdPos { font-size: 64px; }
+html.hw #lcd .l1 { font-size: 14px; gap: 10px; }
+html.hw #lcd .poslab { font-size: 10px; }
+@media (max-width: 430px) { html.hw #lcdPos { font-size: 52px; } }
+html.compact:not(.hw) #lcdPos { font-size: 32px; }
+
+/* SHIFT: lit while held, and the controls it changes are marked. */
+.shiftbtn[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--on-accent); }
+html.shift #groups .btn:nth-child(n+2), html.shift #patDn, html.shift #patUp, html.shift #barDn, html.shift #barUp,
+html.shift #btnErase, html.shift #btnSample, html.shift #sideFader, html.shift #btnPlay { outline: 2px dashed var(--accent); outline-offset: -4px; }

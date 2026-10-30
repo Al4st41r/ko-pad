@@ -1,6 +1,6 @@
 // App shell: state, deck (LCD, groups, pads, mode row), transport, persistence, boot.
-import { GROUPS, PAD_LABELS, GRIDS, PROJECT_COUNT, PATTERNS_PER_GROUP, MAX_BARS, NOTE_NAMES, EFFECTS, USER_SAMPLE_MIN } from './data.js';
-import { factoryProject, normaliseProject, getPattern, setBars, setBeats, beatsOf, clearPad, nextEmptyPattern, doubleLength, halveLength, correctEvents, clearPattern, padSemitone, scaleNote, nextFreeScene, sceneFromCurrent, UndoStack, ticksToPosition } from './model.js';
+import { GROUPS, PAD_LABELS, GRIDS, STEP_PAGE_BARS, PROJECT_COUNT, PATTERNS_PER_GROUP, MAX_BARS, NOTE_NAMES, EFFECTS, USER_SAMPLE_MIN } from './data.js';
+import { factoryProject, normaliseProject, getPattern, setBars, setBeats, beatsOf, clearPad, nextEmptyPattern, doubleLength, halveLength, correctEvents, clearPattern, padSemitone, scaleNote, nudgeEvent, copyOf, pasteInto, patternTicks, nextFreeScene, sceneFromCurrent, UndoStack, ticksToPosition } from './model.js';
 import { Engine } from './audio.js';
 import { Sequencer } from './seq.js';
 import { storage, userSamples } from './store.js';
@@ -10,7 +10,7 @@ const $ = (s, r = document) => r.querySelector(s);
 
 export const A = window.A = {
   project: null, pi: 1, g: 0, sel: 9, tab: 'STEP',
-  keys: false, oct: 0, keysPad: 9, erase: false,
+  keys: false, shift: false, latched: new Map(), oct: 0, keysPad: 9, erase: false,
   velMode: 'fixed', stepGrid: '1/16', clipboard: null,
   catalogue: [], byId: new Map(), undo: new UndoStack(), lastUndoPush: 0,
 };
@@ -121,15 +121,31 @@ const padsEl = $('#pads');
 const padEls = PAD_LABELS.map((lab, i) => {
   const el = document.createElement('div');
   el.className = 'pad'; el.dataset.i = i;
-  el.innerHTML = `<span class="num">${lab}</span><span class="id"></span><span class="nm"></span>`;
+  el.innerHTML = `<span class="num">${lab}</span><span class="id"></span><span class="nm"></span><i class="led" data-g="0"></i>`;
   padsEl.append(el);
   return el;
 });
 const groupEls = GROUPS.map((g, i) => {
   const b = document.createElement('button'); b.className = 'btn'; b.textContent = g;
-  b.addEventListener('click', () => { A.g = i; A.refresh(); });
+  b.addEventListener('click', () => {
+    // SHIFT + B undoes, SHIFT + C copies the pattern, SHIFT + D pastes it (as on the hardware). SHIFT + A selects as usual.
+    if (A.shift && i === 1) return A.undoLast();
+    if (A.shift && i === 2) return copyPattern();
+    if (A.shift && i === 3) return pastePattern();
+    A.g = i; A.refresh();
+  });
   $('#groups').append(b); return b;
 });
+
+function copyPattern() {
+  const p = A.pattern(); if (!p) return A.toast('Pattern is empty');
+  A.clipboard = copyOf(p); A.toast('Pattern copied');
+}
+function pastePattern() {
+  if (!A.clipboard) return A.toast('Nothing copied');
+  const p = A.pattern(true); A.beforeEdit(A.g, p);
+  pasteInto(p, A.clipboard); A.save(); A.refresh(); A.toast('Pasted');
+}
 
 function flash(i) {
   const el = padEls[i]; if (!el) return;
@@ -163,7 +179,7 @@ A.refreshModes = () => {
   $('#octVal').textContent = A.oct;
   $('#bpmVal').textContent = Math.round(A.project.bpm);
   const set = (id, on) => { const b = $(id); b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); };
-  set('#btnKeys', A.keys); set('#sideKeys', A.keys); set('#btnMetro', A.seq.metronome); set('#btnErase', A.erase);
+  set('#btnShift', A.shift); set('#sideShift', A.shift); set('#btnKeys', A.keys); set('#sideKeys', A.keys); set('#btnMetro', A.seq.metronome); set('#btnErase', A.erase);
   set('#btnRepeat', !!A.repeat); set('#btnSoloG', A.soloG === A.g); set('#btnSoloP', !!A.soloP && A.soloP.g === A.g && A.soloP.p === A.sel); set('#btnOver', !!A.overwrite); set('#btnSample', !!A.sampleMode);
   $('#btnPlay').classList.toggle('on', A.seq.playing); $('#btnRec').classList.toggle('on', A.seq.recording);
 };
@@ -211,7 +227,11 @@ A.refreshDials = () => {
 const slider = fader(A.settings.master, (v) => { A.settings.master = v; A.engine.setMaster(v); A.saveSettings(); });
 $('#slider').replaceWith(slider); slider.id = 'slider';
 $('#sideKeys').addEventListener('click', () => $('#btnKeys').click());
-$('#sideFader').addEventListener('click', () => { A.tab = 'MIX'; setView('panel'); });
+$('#sideFader').addEventListener('click', () => {
+  // SHIFT + FADER puts the volume back to its default.
+  if (A.shift) { A.settings.master = 0.9; A.engine.setMaster(0.9); A.saveSettings(); slider.setValue(0.9); return A.toast('Volume reset'); }
+  A.tab = 'MIX'; setView('panel');
+});
 
 // Theme and layout classes live on <html> (js/look.js). HARDWARE is not used on a short landscape phone.
 // An unknown theme or layout in the saved settings falls back to the default, so the LOOK buttons show what is in use.
@@ -291,13 +311,19 @@ padsEl.addEventListener('pointerdown', (e) => {
     return;
   }
   const vel = velocityFor(e, el);
+  // A latched note repeat stops when its pad is tapped again.
+  const lkey = `${A.g}:${i}`;
+  if (A.latched.has(lkey)) { A.seq.stopRepeat(A.g, A.latched.get(lkey)); A.latched.delete(lkey); el.classList.remove('rep'); return; }
   if (A.sampleMode && !A.keys && !A.grp().pads[i].s) { startSampling(e, el, i); return; }
   let padIdx = i, semis = 0;
   if (A.keys) { padIdx = A.keysPad; semis = keyNote(i); }
   else if (A.sel !== i) { A.sel = i; A.refreshPads(); A.refreshLcd(); if (A.tab === 'SOUND') A.renderPanel(); }
   el.classList.add('lit');
   try { el.setPointerCapture(e.pointerId); } catch { /* not capturable */ }
-  down.set(e.pointerId, { el, g: A.g, padIdx, repeat: A.repeat });
+  // SHIFT while REPEAT is held keeps the note repeat running after the pad is released.
+  const latch = !!(A.repeat && A.shift);
+  down.set(e.pointerId, { el, g: A.g, padIdx, repeat: A.repeat, latch, pad: i });
+  if (latch) { A.latched.set(lkey, padIdx); el.classList.add('rep'); }
   if (A.repeat) A.seq.startRepeat(A.g, padIdx, vel, semis);
   else A.seq.padDown(A.g, padIdx, vel, semis);
   if (A.panelDirty && A.tab === 'STEP') { A.panelDirty = false; A.renderPanel(); }
@@ -307,7 +333,7 @@ const release = (e) => {
   down.delete(e.pointerId);
   d.el.classList.remove('lit', 'erasing', 'recording');
   if (d.sample) { d.sample.stop(); return; }
-  if (d.repeat) A.seq.stopRepeat(d.g, d.padIdx);
+  if (d.repeat) { if (!d.latch) A.seq.stopRepeat(d.g, d.padIdx); }
   else if (!d.erase) A.seq.padUp(d.g, d.padIdx);
 };
 padsEl.addEventListener('pointerup', release);
@@ -316,10 +342,27 @@ padsEl.addEventListener('contextmenu', (e) => e.preventDefault());
 
 // Mode row and transport.
 const bind = (sel, fn) => $(sel).addEventListener('click', fn);
-bind('#patDn', () => { const g = A.grp(); g.cur = g.cur <= 1 ? PATTERNS_PER_GROUP : g.cur - 1; A.save(); A.refresh(); });
-bind('#patUp', () => { const g = A.grp(); g.cur = g.cur >= PATTERNS_PER_GROUP ? 1 : g.cur + 1; A.save(); A.refresh(); });
+// SHIFT + PATTERN -/+: with a pad held, nudge that pad's notes; otherwise move between bars in the STEP grid.
+const heldPad = () => { for (const d of down.values()) if (d.pad !== undefined && !d.erase && !d.sample) return d.pad; return null; };
+function shiftPattern(d) {
+  const pad = heldPad(), pat = A.pattern();
+  if (pad !== null) {
+    if (!pat) return A.toast('This pattern is empty');
+    const step = GRIDS[A.seq.quantise] || 1, hits = pat.ev.filter((e) => e.p === pad);
+    if (!hits.length) return A.toast(`No notes on pad ${PAD_LABELS[pad]} to nudge`);
+    A.beforeEdit(A.g, pat); hits.forEach((e) => nudgeEvent(pat, e, d * step));
+    A.save(); A.renderPanel(); return A.toast(`Nudged pad ${PAD_LABELS[pad]} by ${d * step} tick${step > 1 ? 's' : ''}`);
+  }
+  const bars = pat ? pat.bars : 1, pages = Math.max(1, Math.ceil(bars / STEP_PAGE_BARS));
+  A.stepPage = Math.max(0, Math.min(pages - 1, (A.stepPage || 0) + d));
+  A.tab = 'STEP'; A.renderPanel();
+  A.toast(`Bars ${A.stepPage * STEP_PAGE_BARS + 1} to ${Math.min(bars, (A.stepPage + 1) * STEP_PAGE_BARS)}`);
+}
+bind('#patDn', () => { if (A.shift) return shiftPattern(-1); const g = A.grp(); g.cur = g.cur <= 1 ? PATTERNS_PER_GROUP : g.cur - 1; A.save(); A.refresh(); });
+bind('#patUp', () => { if (A.shift) return shiftPattern(1); const g = A.grp(); g.cur = g.cur >= PATTERNS_PER_GROUP ? 1 : g.cur + 1; A.save(); A.refresh(); });
 const bars = (d) => { const pat = A.pattern(true); A.beforeEdit(A.g, pat); setBars(pat, pat.bars + d); A.save(); A.refresh(); };
-bind('#barDn', () => bars(-1)); bind('#barUp', () => bars(1));
+// SHIFT + BARS +: duplicate the pattern to twice its length. SHIFT + BARS -: halve it.
+bind('#barDn', () => A.shift ? $('#btnHalf').click() : bars(-1)); bind('#barUp', () => A.shift ? $('#btnX2').click() : bars(1));
 const beats = (d) => { const pat = A.pattern(true); A.beforeEdit(A.g, pat); setBeats(pat, beatsOf(pat) + d); A.save(); A.refresh(); };
 bind('#beatDn', () => beats(-1)); bind('#beatUp', () => beats(1));
 bind('#octDn', () => { A.oct = Math.max(-3, A.oct - 1); A.refresh(); });
@@ -333,6 +376,19 @@ const hold = (id, key) => {
   for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) b.addEventListener(ev, () => { A[key] = false; A.refreshModes(); });
 };
 hold('#btnRepeat', 'repeat');
+// SHIFT is held, like the hardware key. The Shift key on a keyboard does the same.
+const setShift = (on) => {
+  if (A.shift === on) return;
+  A.shift = on; document.documentElement.classList.toggle('shift', on); A.refreshModes();
+};
+for (const id of ['#btnShift', '#sideShift']) {
+  const b = $(id);
+  b.addEventListener('pointerdown', (e) => { e.preventDefault(); try { b.setPointerCapture(e.pointerId); } catch { /* not capturable */ } setShift(true); });
+  for (const ev of ['pointerup', 'pointercancel']) b.addEventListener(ev, () => setShift(false));
+}
+addEventListener('keydown', (e) => { if (e.key === 'Shift') setShift(true); });
+addEventListener('keyup', (e) => { if (e.key === 'Shift') setShift(false); });
+addEventListener('blur', () => setShift(false));
 bind('#btnCommit', () => {
   const n = nextFreeScene(A.project);
   if (n > 99) return A.toast('All 99 scenes are used');
@@ -362,16 +418,25 @@ bind('#btnSoloP', () => {
   A.soloP = same ? null : { g: A.g, p: A.sel }; A.engine.setSoloPad(A.soloP?.g, A.soloP?.p); A.refreshModes();
 });
 bind('#btnOver', () => { A.overwrite = !A.overwrite; A.refreshModes(); if (A.overwrite) A.toast('The next recording replaces this pattern from the start'); });
-bind('#btnSample', () => setSampleMode(!A.sampleMode));
+// SHIFT + SAMPLE is CHOP on the hardware; the chop tools are in the SOUND tab.
+bind('#btnSample', () => { if (A.shift) { A.tab = 'SOUND'; setView('panel'); return A.toast('Chop is in the SOUND tab'); } setSampleMode(!A.sampleMode); });
 const erase = $('#btnErase');
-erase.addEventListener('pointerdown', () => { A.erase = true; A.refreshModes(); });
+erase.addEventListener('pointerdown', () => {
+  // SHIFT + ERASE opens the system settings; here that is the PROJECT tab.
+  if (A.shift) { A.tab = 'PROJECT'; setView('panel'); return; }
+  A.erase = true; A.refreshModes();
+});
 for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) erase.addEventListener(ev, () => { A.erase = false; A.refreshModes(); });
 
 $('#timingSel').innerHTML = ['off', ...Object.keys(GRIDS)].map((k) => `<option value="${k}">${k === 'off' ? 'OFF' : k}</option>`).join('');
+// SHIFT + TIMING opens timing correct (here: correct every note to the current grid).
+$('#timingSel').addEventListener('pointerdown', (e) => { if (A.shift) { e.preventDefault(); correct(null); } });
 $('#timingSel').addEventListener('change', (e) => { A.seq.quantise = e.target.value; A.settings.quantise = e.target.value; A.saveSettings(); });
 
 bind('#btnPlay', async () => {
   await A.engine.start();
+  // SHIFT + PLAY starts again from the beginning of the pattern, keeping record armed.
+  if (A.shift && A.seq.playing) { const rec = A.seq.recording; A.seq.stop(); A.seq.start({ record: rec, countIn: false }); wakeLock(true); return A.refreshModes(); }
   if (A.seq.playing) A.seq.stop(); else { A.seq.start(); wakeLock(true); }
   A.refreshModes();
 });
@@ -444,6 +509,31 @@ addEventListener('pointerdown', (e) => {
   for (const p of popups) if (p.box.classList.contains(p.cls) && !e.target.closest(p.inside)) closePopups();
 }, true);
 
+// Pad LEDs, as on the hardware: a pad lights when it holds a note. A small dot shows a pad that has notes in the pattern;
+// while playing, the dot is lit on the pads that have a note on the current step (the STEP grid's step size).
+const LED_COLOURS = ['--led-a', '--led-b', '--led-c', '--led-d'];
+function updateLeds(pos) {
+  const playing = pos !== null && pos >= 0;
+  const pat = A.keys ? null : (A.seq.playing ? A.seq._patFor(A.g) : A.pattern());
+  const has = new Set(), hit = new Set();
+  if (pat) {
+    const grid = GRIDS[A.stepGrid] || 24;
+    let from = -1, to = -1;
+    if (playing) {
+      const base = A.seq.songMode ? pos - A.seq.sceneStart : pos;
+      from = Math.floor((base % patternTicks(pat)) / grid) * grid; to = from + grid;
+    }
+    for (const ev of pat.ev) { has.add(ev.p); if (ev.t >= from && ev.t < to) hit.add(ev.p); }
+  }
+  padEls.forEach((el, i) => {
+    const st = hit.has(i) ? 'hit' : has.has(i) ? 'has' : '';
+    if (el._led === st && el._ledG === A.g) return;
+    el._led = st; el._ledG = A.g;
+    const led = el.lastElementChild;
+    led.className = `led ${st}`; led.style.setProperty('--led', `var(${LED_COLOURS[A.g]})`);
+  });
+}
+
 // Frame loop: LCD position, meter, step playhead.
 const lcdPos = $('#lcdPos'), meterEl = $('#meter');
 function frame() {
@@ -452,6 +542,7 @@ function frame() {
   if (pos === null) el.textContent = '--.-.-';
   else if (pos < 0) el.textContent = 'COUNT';
   else { const p = ticksToPosition(Math.floor(pos), A.seq.countLen); el.textContent = `${String(p.bar).padStart(2, '0')}.${p.beat}.${p.sixteenth}`; }
+  updateLeds(pos);
   meterEl.style.width = `${Math.min(100, A.engine.level() * 100)}%`;
   A.onFrame?.(pos);
   if (A.seq.playing === false && A._wasPlaying) { A._wasPlaying = false; A.refreshModes(); }

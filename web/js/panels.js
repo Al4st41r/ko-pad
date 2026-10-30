@@ -461,11 +461,15 @@ export function knob(label, name, value, onChange) {
   const ptr = el.querySelector('.ptr');
   function draw() { ptr.setAttribute('transform', `rotate(${-135 + value * 270} 50 50)`); }
   draw();
-  let y0, v0;
-  el.addEventListener('pointerdown', (e) => { y0 = e.clientY; v0 = value; el.setPointerCapture(e.pointerId); });
+  let y0, v0, f0;
+  // SHIFT slows the move to a quarter, as on the hardware ("finer control").
+  const fineNow = () => document.documentElement.classList.contains('shift');
+  el.addEventListener('pointerdown', (e) => { y0 = e.clientY; v0 = value; f0 = fineNow(); el.setPointerCapture(e.pointerId); });
   el.addEventListener('pointermove', (e) => {
     if (y0 === undefined) return;
-    value = Math.min(1, Math.max(0, v0 + (y0 - e.clientY) / 160)); draw(); onChange(value);
+    const f = fineNow();
+    if (f !== f0) { y0 = e.clientY; v0 = value; f0 = f; }
+    value = Math.min(1, Math.max(0, v0 + (y0 - e.clientY) / (f ? 640 : 160))); draw(); onChange(value);
   });
   const end = () => { y0 = undefined; };
   el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
@@ -478,9 +482,19 @@ export function fader(value, onChange) {
   draw();
   el.setValue = (v) => { value = v; draw(); };
   const set = (e) => { const r = el.getBoundingClientRect(); value = Math.min(1, Math.max(0, 1 - (e.clientY - r.top) / r.height)); draw(); onChange(value); };
-  let on = false;
-  el.addEventListener('pointerdown', (e) => { on = true; el.setPointerCapture(e.pointerId); set(e); });
-  el.addEventListener('pointermove', (e) => { if (on) set(e); });
+  // With SHIFT held the fader moves relative to where the drag began, at a quarter of the distance.
+  const fineNow = () => document.documentElement.classList.contains('shift');
+  let on = false, y0, v0;
+  el.addEventListener('pointerdown', (e) => {
+    on = true; el.setPointerCapture(e.pointerId); y0 = e.clientY; v0 = value;
+    if (!fineNow()) set(e);
+  });
+  el.addEventListener('pointermove', (e) => {
+    if (!on) return;
+    if (!fineNow()) { set(e); y0 = e.clientY; v0 = value; return; }
+    const r = el.getBoundingClientRect();
+    value = Math.min(1, Math.max(0, v0 + (y0 - e.clientY) / r.height / 4)); draw(); onChange(value);
+  });
   const end = () => { on = false; }; el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
   return el;
 }

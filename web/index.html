@@ -55,8 +55,13 @@
   <main>
     <section id="deck">
       <div id="lcd">
-        <div class="l1"><span id="lcdProj">P1</span><span id="lcdGrp">A</span><span id="lcdPat">PAT 01</span><span id="lcdBars">1 BAR</span><span id="lcdPos" class="right">--.-.-</span></div>
-        <div class="l2" id="lcdSample">&nbsp;</div>
+        <div class="lcd-main">
+          <div class="lcd-info">
+            <div class="l1"><span id="lcdProj">P1</span><span id="lcdGrp">A</span><span id="lcdPat">PAT 01</span><span id="lcdBars">1 BAR</span></div>
+            <div class="l2" id="lcdSample">&nbsp;</div>
+          </div>
+          <div class="lcd-pos"><div id="lcdPos">--.-.-</div><span class="poslab">BAR &nbsp;BT &nbsp;STEP</span></div>
+        </div>
         <div class="meter"><i id="meter"></i></div>
       </div>
       <div id="dials" class="hw-only">
@@ -72,6 +77,7 @@
           <div id="slider"></div>
           <button class="btn small" id="sideFader" aria-label="Open the fader mixer">FADER</button>
           <button class="btn small" id="sideKeys" aria-pressed="false">KEYS</button>
+          <button class="btn small shiftbtn" id="sideShift" aria-pressed="false" aria-label="Shift (hold)">SHIFT</button>
         </div>
       </div>
       <div id="modes">
@@ -80,7 +86,8 @@
             <button class="btn small" id="patDn" aria-label="Previous pattern">&minus;</button><div class="val" id="patVal">1</div><button class="btn small" id="patUp" aria-label="Next pattern">+</button></div>
           <div class="cell"><span class="lab">BARS</span>
             <button class="btn small" id="barDn" aria-label="Fewer bars">&minus;</button><div class="val" id="barVal">1</div><button class="btn small" id="barUp" aria-label="More bars">+</button></div>
-          <div class="cell keys"><button class="btn small" id="btnKeys" aria-pressed="false">KEYS</button></div>
+          <div class="cell keys"><button class="btn small" id="btnKeys" aria-pressed="false">KEYS</button>
+            <button class="btn small shiftbtn" id="btnShift" aria-pressed="false" aria-label="Shift (hold)">SHIFT<i> (HOLD)</i></button></div>
           <div class="cell hold"><button class="btn small" id="btnRepeat" aria-pressed="false"><span class="nr">NOTE </span>REPEAT<i> (HOLD)</i></button>
             <button class="btn small" id="btnErase" aria-pressed="false">ERASE<i> (HOLD)</i></button>
             <button class="btn small" id="btnUndo">UNDO</button></div>

@@ -241,6 +241,25 @@ There is no build. Edit files in `web/` and reload.
 - Data on the device: projects are in `localStorage` under `ko.proj.N`, settings under `ko.settings`, and imported or recorded sounds in the IndexedDB database `ko-samples`.
 - Themes are CSS custom properties set by `data-theme` on `<html>` (see the top of `web/style.css`). `web/js/look.js` sets `data-theme`, `hw` and `compact` on `<html>` before first paint. `compact` covers phones and HARDWARE, and the HARDWARE block at the end of the stylesheet only adds what differs.
 
+### SHIFT and pad lights
+
+Hold SHIFT (the side strip in HARDWARE, the mode row otherwise; the Shift key on a keyboard also works). Controls that change are outlined while it is held.
+
+| With SHIFT held | Result |
+|---|---|
+| Group B, C, D | Undo, copy pattern, paste pattern |
+| PATTERN - / + | Move between bars in the STEP grid; with a pad held, nudge that pad's notes (one grid step, or one tick with TIMING off) |
+| BARS - / + | Halve or double the pattern length |
+| PLAY | Restart from the pattern start (record stays armed) |
+| ERASE | Open the PROJECT tab (the hardware opens system settings) |
+| SAMPLE | Open the SOUND tab, where chop is |
+| TIMING | Timing correct, all notes |
+| Pad, while NOTE REPEAT is held | Latch the repeat; tap the pad again to stop |
+| FADER | Reset volume |
+| X and Y knobs, faders | Finer control |
+
+Each pad has a dot. A ring means the pad has notes in the pattern. While playing, the dot lights on the pads that have a note on the current step (the STEP grid size). The colour follows the group. The display shows the bar, beat and step in large digits.
+
 ## Known limits
 
 - Tested in headless Chromium (audio engine, sequencer timing, recording, offline reload) and in layout at iPad and iPhone sizes. It has not been run on a physical iPad, iPhone or in Safari.
