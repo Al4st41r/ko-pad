@@ -37,9 +37,7 @@
       <button id="btnMetro" class="btn small extra" aria-pressed="false">METRO</button>
     </div>
     <div class="stepper" id="bpmBox">
-      <button class="btn small" id="bpmDn" aria-label="Slower">&minus;</button>
-      <div class="val" id="bpmVal" title="Drag up or down to change tempo">120</div>
-      <button class="btn small" id="bpmUp" aria-label="Faster">+</button>
+      <button class="val" id="bpmVal" title="Tap to select tempo for the - and + buttons, or drag up or down">120</button>
       <button class="btn small extra" id="bpmTap">TAP</button>
       <span class="lab">BPM</span>
     </div>
@@ -81,10 +79,8 @@
       </div>
       <div id="modes">
         <div id="modesMain">
-          <div class="cell"><span class="lab">PATTERN</span>
-            <button class="btn small" id="patDn" aria-label="Previous pattern">&minus;</button><div class="val" id="patVal">1</div><button class="btn small" id="patUp" aria-label="Next pattern">+</button></div>
-          <div class="cell"><span class="lab">BARS</span>
-            <button class="btn small" id="barDn" aria-label="Fewer bars">&minus;</button><div class="val" id="barVal">1</div><button class="btn small" id="barUp" aria-label="More bars">+</button></div>
+          <div class="cell param"><button class="btn small" id="pmSel" aria-label="Value changed by minus and plus (tap to choose the next)">PATTERN</button>
+            <button class="btn small" id="pmDn" aria-label="Decrease">&minus;</button><div class="val" id="pmVal">1</div><button class="btn small" id="pmUp" aria-label="Increase">+</button></div>
           <div class="cell keys"><button class="btn small" id="btnKeys" aria-pressed="false">KEYS</button>
             <button class="btn small shiftbtn" id="btnShift" aria-pressed="false" aria-label="Shift (hold, or tap to latch)">SHIFT<i> (TAP = LATCH)</i></button></div>
           <div class="cell hold"><button class="btn small" id="btnRepeat" aria-pressed="false"><span class="nr">NOTE </span>REPEAT<i> (HOLD)</i></button>
@@ -93,11 +89,7 @@
           <button class="btn small phone-only" id="btnTools" aria-expanded="false">TOOLS</button>
         </div>
         <div id="modesMore">
-          <div class="cell"><span class="lab">BEATS /4</span>
-            <button class="btn small" id="beatDn" aria-label="Fewer beats">&minus;</button><div class="val" id="beatVal">4</div><button class="btn small" id="beatUp" aria-label="More beats">+</button></div>
           <div class="cell"><span class="lab">TIMING</span><select id="timingSel" aria-label="Timing"></select></div>
-          <div class="cell"><span class="lab">OCTAVE</span>
-            <button class="btn small" id="octDn">OCT&minus;</button><div class="val" id="octVal">0</div><button class="btn small" id="octUp">OCT+</button></div>
           <div class="cell"><button class="btn small" id="btnSample" aria-pressed="false">SAMPLE</button>
             <button class="btn small" id="btnCommit">COMMIT</button></div>
           <div class="cell"><span class="lab">PATTERN TOOLS</span>

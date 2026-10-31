@@ -50,6 +50,9 @@ button, select, input { font: inherit; color: inherit; }
 select { background: var(--raise); border: 1px solid var(--line); border-radius: var(--r-s); min-height: 34px; padding: 0 8px; }
 .dim { color: var(--dim); }
 .lab { font-size: 10px; color: var(--dim); letter-spacing: .1em; }
+.cell.param #pmSel { min-width: 92px; }
+#bpmVal { background: none; border: 1px solid transparent; border-radius: var(--r-s); color: inherit; padding: 4px 6px; cursor: ns-resize; }
+#bpmVal.sel { border-color: var(--accent); color: var(--accent); }
 .val { min-width: 40px; text-align: center; font: 600 15px ui-monospace, "SF Mono", Menlo, monospace; }
 .chip { font-size: 11px; padding: 4px 10px; border-radius: var(--r-pill); background: var(--raise); border: 1px solid var(--line); color: var(--dim); }
 .chip.ok { color: var(--ok); border-color: var(--ok-line); }
@@ -215,7 +218,7 @@ html.compact #top::after { content: ""; order: 9; flex-basis: 100%; height: 0; }
 html.compact .brand, html.compact #top .spacer, html.compact #bpmBox .lab { display: none; }
 html.compact .transport, html.compact #bpmBox { display: contents; }
 html.compact #btnStop, html.compact #btnPlay, html.compact #btnRec { order: 1; }
-html.compact #bpmDn, html.compact #bpmVal, html.compact #bpmUp { order: 2; }
+html.compact #bpmVal { order: 2; }
 html.compact #bpmVal { min-width: 48px; }
 html.compact #btnMore { order: 3; margin-left: auto; }
 html.compact #top .extra { display: none; order: 10; }
@@ -239,7 +242,7 @@ html.compact .v-panel #tabs [data-view="pads"] { color: var(--dim); border-top-c
 /* Mode strip: pattern, bars, KEYS, REPEAT, ERASE, UNDO, TOOLS */
 html.compact #modes { display: block; margin-top: 8px; }
 html.compact #modesMain { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 6px; }
-html.compact #modesMain > .cell:nth-child(-n+2) { grid-column: span 5; justify-content: space-between; }
+html.compact #modesMain > .cell.param { grid-column: span 10; justify-content: space-between; }
 html.compact #modesMain .cell { display: flex; align-items: center; gap: 4px; }
 html.compact #modesMain .cell .val { min-width: 24px; flex: 1; }
 html.compact #modesMain .cell.keys, html.compact #modesMain .cell.hold { display: contents; }
@@ -282,7 +285,7 @@ html.compact #toast { bottom: calc(var(--bar) + var(--inset-b) + 16px); }
   html.compact #lcd .l1 { font-size: 13px; gap: 8px; }
   html.compact #modes { grid-column: 2; grid-row: 2; margin-top: 0; overflow: auto; }
   html.compact #modesMain { grid-template-columns: repeat(6, minmax(0, 1fr)); }
-  html.compact #modesMain > .cell:nth-child(-n+2) { grid-column: span 6; }
+  html.compact #modesMain > .cell.param { grid-column: span 6; }
   html.compact #modes.sheet #modesMore { left: auto; right: calc(var(--bar) + 16px + env(safe-area-inset-right)); top: 56px; bottom: 8px; width: 300px; max-height: none; }
   html.compact #toast { bottom: calc(var(--inset-b) + 16px); }
 }
@@ -335,7 +338,7 @@ html.hw #side { flex: none; width: 56px; flex-direction: column; align-items: st
 html.hw #side .fader, html.hw #slider { flex: 1; width: 100%; height: auto; min-height: 80px; }
 html.hw #side .btn { padding: 0; font-size: 11px; letter-spacing: .02em; }
 html.hw #modesMain { grid-template-columns: repeat(8, minmax(0, 1fr)); }
-html.hw #modesMain > .cell:nth-child(-n+2) { grid-column: span 4; }
+html.hw #modesMain > .cell.param { grid-column: span 8; }
 html.hw #modesMain .cell.keys { display: none; }
 html.hw #modes.sheet #modesMore { left: 50%; right: auto; transform: translateX(-50%); width: min(740px, calc(100% - 16px)); }
 @media (max-width: 430px) { html.hw #tabs button { font-size: 10px; letter-spacing: 0; } }

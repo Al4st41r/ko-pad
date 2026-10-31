@@ -41,7 +41,7 @@ with sync_playwright() as p:
         page.click("#tabs [data-view=pads]")
         check(f"{label}: PADS returns to the pads", page.is_visible("#pads") and not page.is_visible("#tabBody"))
         page.click("#btnTools")
-        check(f"{label}: TOOLS opens the sheet", page.is_visible("#btnCorrAll") and page.is_visible("#beatUp"))
+        check(f"{label}: TOOLS opens the sheet", page.is_visible("#btnCorrAll"))
         page.mouse.click(5, 5)  # the header: the sheet can cover pads on a short screen
         check(f"{label}: tapping outside closes the sheet", not page.is_visible("#btnCorrAll"))
         page.click("#btnMore")

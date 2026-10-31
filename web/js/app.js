@@ -2,6 +2,7 @@
 import { GROUPS, PAD_LABELS, GRIDS, STEP_PAGE_BARS, PROJECT_COUNT, PATTERNS_PER_GROUP, MAX_BARS, NOTE_NAMES, EFFECTS, USER_SAMPLE_MIN } from './data.js';
 import { factoryProject, normaliseProject, getPattern, setBars, setBeats, beatsOf, clearPad, nextEmptyPattern, doubleLength, halveLength, correctEvents, clearPattern, padSemitone, scaleNote, nudgeEvent, copyOf, pasteInto, patternTicks, nextFreeScene, sceneFromCurrent, UndoStack, ticksToPosition } from './model.js';
 import { Engine } from './audio.js';
+import { PARAMS, cycleParam, stepValue } from './params.js';
 import { Sequencer } from './seq.js';
 import { storage, userSamples } from './store.js';
 import { TABS, renderTab, storeBuffer, knob, fader } from './panels.js';
@@ -173,10 +174,13 @@ A.refreshPads = () => {
 
 A.refreshModes = () => {
   const grp = A.grp(), pat = getPattern(A.project, A.g);
-  $('#patVal').textContent = grp.cur;
-  $('#barVal').textContent = pat ? pat.bars : 1;
-  $('#beatVal').textContent = pat ? beatsOf(pat) : 4;
-  $('#octVal').textContent = A.oct;
+  const act = PARAM_ACTIONS[A.param];
+  $('#pmSel').textContent = PARAMS.find((q) => q.id === A.param).label;
+  $('#pmVal').textContent = act.get();
+  for (const [i, id] of ['#pmDn', '#pmUp'].entries()) {
+    const el = $(id); if (A.shift && act.shift) tagShift(el, act.shift[i]); else delete el.dataset.shift;
+  }
+  $('#bpmVal').classList.toggle('sel', A.param === 'bpm');
   $('#bpmVal').textContent = Math.round(A.project.bpm);
   const set = (id, on) => { const b = $(id); b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); };
   set('#btnShift', A.shift); set('#sideShift', A.shift); set('#btnKeys', A.keys); set('#sideKeys', A.keys); set('#btnMetro', A.seq.metronome); set('#btnErase', A.erase);
@@ -358,15 +362,23 @@ function shiftPattern(d) {
   A.tab = 'STEP'; A.renderPanel();
   A.toast(`Bars ${A.stepPage * STEP_PAGE_BARS + 1} to ${Math.min(bars, (A.stepPage + 1) * STEP_PAGE_BARS)}`);
 }
-bind('#patDn', () => { if (A.shift) return shiftPattern(-1); const g = A.grp(); g.cur = g.cur <= 1 ? PATTERNS_PER_GROUP : g.cur - 1; A.save(); A.refresh(); });
-bind('#patUp', () => { if (A.shift) return shiftPattern(1); const g = A.grp(); g.cur = g.cur >= PATTERNS_PER_GROUP ? 1 : g.cur + 1; A.save(); A.refresh(); });
+const patStep = (d) => { const g = A.grp(); g.cur = stepValue('pattern', g.cur, d); A.save(); A.refresh(); };
 const bars = (d) => { const pat = A.pattern(true); A.beforeEdit(A.g, pat); setBars(pat, pat.bars + d); A.save(); A.refresh(); };
-// SHIFT + BARS +: duplicate the pattern to twice its length. SHIFT + BARS -: halve it.
-bind('#barDn', () => A.shift ? $('#btnHalf').click() : bars(-1)); bind('#barUp', () => A.shift ? $('#btnX2').click() : bars(1));
 const beats = (d) => { const pat = A.pattern(true); A.beforeEdit(A.g, pat); setBeats(pat, beatsOf(pat) + d); A.save(); A.refresh(); };
-bind('#beatDn', () => beats(-1)); bind('#beatUp', () => beats(1));
-bind('#octDn', () => { A.oct = Math.max(-3, A.oct - 1); A.refresh(); });
-bind('#octUp', () => { A.oct = Math.min(3, A.oct + 1); A.refresh(); });
+// One -/+ pair for every value, like the device: the selector button picks the target.
+// SHIFT + PATTERN -/+ moves between bars or nudges a held pad; SHIFT + BARS -/+ halves or doubles the pattern.
+const PARAM_ACTIONS = {
+  pattern: { get: () => A.grp().cur, step: (d) => (A.shift ? shiftPattern(d) : patStep(d)), shift: ['BAR -', 'BAR +'] },
+  bars: { get: () => getPattern(A.project, A.g)?.bars ?? 1, step: (d) => (A.shift ? $(d < 0 ? '#btnHalf' : '#btnX2').click() : bars(d)), shift: ['HALF', 'x2'] },
+  bpm: { get: () => Math.round(A.project.bpm), step: (d) => setBpm(A.project.bpm + d) },
+  beats: { get: () => { const p = getPattern(A.project, A.g); return p ? beatsOf(p) : 4; }, step: beats },
+  octave: { get: () => A.oct, step: (d) => { A.oct = stepValue('octave', A.oct, d); A.refresh(); } },
+};
+A.param = A.param || 'pattern';
+const selectParam = (id) => { A.param = id; A.refreshModes(); };
+bind('#pmSel', () => selectParam(cycleParam(A.param)));
+bind('#pmDn', () => PARAM_ACTIONS[A.param].step(-1));
+bind('#pmUp', () => PARAM_ACTIONS[A.param].step(1));
 bind('#btnKeys', () => { A.keys = !A.keys; if (A.keys) A.keysPad = A.sel; A.refresh(); });
 bind('#btnUndo', () => A.undoLast());
 bind('#btnMetro', () => { A.seq.metronome = !A.seq.metronome; A.settings.metronome = A.seq.metronome; A.saveSettings(); A.refreshModes(); });
@@ -378,7 +390,7 @@ const hold = (id, key) => {
 hold('#btnRepeat', 'repeat');
 // While SHIFT is down each control it changes shows what it will do (see html.shift [data-shift] in style.css).
 const SHIFT_LABELS = {
-  '#patDn': 'BAR -', '#patUp': 'BAR +', '#barDn': 'HALF', '#barUp': 'x2', '#btnErase': 'PROJECT', '#btnSample': 'CHOP',
+  '#btnErase': 'PROJECT', '#btnSample': 'CHOP',
   '#sideFader': 'RESET VOL', '#btnPlay': 'RESTART', '#btnRepeat': 'LATCH', '#timingSel': 'CORRECT ALL',
 };
 // The overlay needs a positioned parent. Only static elements are changed, so nothing already placed (absolute, fixed, sticky) moves.
@@ -484,7 +496,6 @@ bind('#btnRec', async () => {
 
 // Tempo.
 const setBpm = (b) => { A.project.bpm = Math.max(40, Math.min(300, Math.round(b * 10) / 10)); A.engine.ctx && A.engine.setBpm(A.project.bpm); A.save(); A.refreshModes(); };
-bind('#bpmDn', () => setBpm(A.project.bpm - 1)); bind('#bpmUp', () => setBpm(A.project.bpm + 1));
 let taps = [];
 bind('#bpmTap', () => {
   const t = performance.now(); taps = taps.filter((x) => t - x < 2500); taps.push(t);
@@ -495,6 +506,7 @@ bind('#bpmTap', () => {
   v.addEventListener('pointerdown', (e) => { y0 = e.clientY; b0 = A.project.bpm; v.setPointerCapture(e.pointerId); });
   v.addEventListener('pointermove', (e) => { if (y0 !== undefined && v.hasPointerCapture(e.pointerId)) setBpm(b0 + (y0 - e.clientY) / 4); });
   v.addEventListener('pointerup', () => { y0 = undefined; });
+  v.addEventListener('click', () => selectParam('bpm'));
 }
 $('#swing').addEventListener('input', (e) => { A.project.swing = e.target.value / 100; A.save(); });
 

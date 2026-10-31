@@ -86,13 +86,13 @@ A pattern is a recorded or step-programmed loop of hits. Each of the four groups
 
 1. Choose the project (1 to 9) in the transport bar. On a phone or in the HARDWARE layout the project selector is behind the ... button.
 2. Choose the group with the A to D buttons.
-3. Under the pads, step PATTERN with - and + to the number you want, for example 5. A pattern number is just a slot. Choosing a number that has never been used starts an empty pattern.
+3. Under the pads, the selector button shows PATTERN. Step it with - and + to the number you want, for example 5. A pattern number is just a slot. Choosing a number that has never been used starts an empty pattern.
 4. Record or program the pattern.
    - Live: press the record button (a one-bar count-in plays first), then tap pads. TIMING sets the quantise grid.
    - Step: open the STEP tab and tap cells in the grid.
-5. Set the length with BARS (1 to 99) and, if needed, the time signature with BEATS /4 in TOOLS.
+5. Press the selector button until it reads BARS, then set the length with - and + (1 to 99). If needed, select BEATS /4 for the time signature.
 6. Press stop. The pattern is stored in slot 5 of that group.
-7. Choose another number with PATTERN + and repeat. Go back to any number to play or edit it.
+7. Select PATTERN again, press + and repeat. Go back to any number to play or edit it.
 
 Helpful controls.
 
@@ -134,7 +134,7 @@ HARDWARE layout, top to bottom.
 - Two dials above the pads, as on the hardware. X (orange) and Y (dark) set the two parameters of the active effect. The button between them chooses the effect.
 - The pads with the group buttons A to D on the left.
 - A strip on the right with a volume slider (the main level), FADER (opens the group faders in the MIX tab) and KEYS.
-- Pattern, bars, note repeat, erase, undo and TOOLS under the pads.
+- One selector button with a single - and + pair (pattern, bars, tempo, beats per bar and octave), then note repeat, erase, undo and TOOLS under the pads.
 - The transport along the bottom: stop, play, record and tempo. The ... button shows the project selector, metronome, tap tempo, swing and offline status.
 
 HARDWARE is not used on a landscape phone, where the screen is too short. It works on any width, and on a wide screen it is a centred column.
@@ -148,7 +148,7 @@ The pads are the instrument. The panel has six tabs.
 - LCD: project, group, pattern, length, playhead position and the name of the selected sample.
 - Group buttons A to D. Each group has 12 pads, its own 99 patterns and its own level.
 - Pads are labelled as on the hardware (7 8 9 / 4 5 6 / 1 2 3 / . 0 ENTER). The small number is the sample number. Multi-touch works.
-- PATTERN and BARS step the current pattern and its length (1 to 99 bars). BEATS /4 sets the time signature of the pattern, from 1/4 to 12/4. Changing it drops hits past the new end (UNDO brings them back).
+- As on the hardware, one - and + pair changes whichever value is selected. Each press of the selector button moves to the next: PATTERN, BARS, BPM, BEATS /4 and OCTAVE, then back to PATTERN. Tapping the tempo number in the transport bar selects BPM. BARS sets the length (1 to 99 bars). BEATS /4 sets the time signature of the pattern, from 1/4 to 12/4. Changing it drops hits past the new end (UNDO brings them back). With SHIFT held, - and + on PATTERN move between bars (or nudge a held pad), and on BARS halve or double the length.
 - TIMING sets the quantise grid used when recording live. OFF records exactly as played.
 - KEYS plays the selected pad's sound across the pads as a keyboard. OCT shifts the octave. The scale (chromatic, the seven modes, two pentatonics) is set in the PROJECT tab.
 - PATTERN TOOLS: NEXT EMPTY jumps to the next pattern with no hits. LENGTH x2 repeats the pattern into twice the bars (up to 99). LENGTH /2 keeps the first half. All are undoable.
@@ -163,7 +163,7 @@ The pads are the instrument. The panel has six tabs.
 **Transport**
 
 - Project 1 to 9. Every pad starts empty. If you install sounds as in Route 2, projects 1 to 4 also load the preset layout for the sample numbers you have.
-- Stop, Play, Record (a one-bar count-in plays first unless switched off), METRO, tempo (buttons, drag the number, or TAP) and swing.
+- Stop, Play, Record (a one-bar count-in plays first unless switched off), METRO, tempo (select BPM and use - and +, drag the number, or TAP) and swing.
 
 **Tabs**
 
@@ -189,7 +189,7 @@ The HARDWARE layout (the default) works on a phone in portrait. On a phone held 
 
 - A bottom bar (a rail on the right in landscape) switches between PADS and the STEP, SOUND, FX, MIX, SONG and PROJECT panels. Each panel takes the whole screen.
 - The top bar keeps stop, play, record and tempo. The ... button shows the project selector, METRO, TAP tempo, swing and the offline status.
-- Under the pads: pattern, bars, KEYS, NOTE REPEAT, ERASE and UNDO. TOOLS opens a sheet with beats per bar, timing, octave, SAMPLE, COMMIT, pattern tools, timing correct, solo and overwrite. Tap anywhere outside the sheet to close it.
+- Under the pads: the selector with - and +, KEYS, NOTE REPEAT, ERASE and UNDO. TOOLS opens a sheet with timing, SAMPLE, COMMIT, pattern tools, timing correct, solo and overwrite. Tap anywhere outside the sheet to close it.
 - In landscape the pads are on the left and the controls on the right.
 
 ## Install on the iPad and prepare for a flight
