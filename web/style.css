@@ -43,8 +43,8 @@ button, select, input { font: inherit; color: inherit; }
   font-weight: 600; letter-spacing: .04em; touch-action: manipulation; }
 .btn:active { background: var(--raise2); }
 .btn.small { min-height: 34px; min-width: 34px; padding: 0 9px; font-size: 12px; }
-.btn.accent, .btn.on, .btn[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
-.btn.rec.on { background: var(--rec); border-color: var(--rec); color: #fff; }
+.btn.accent, .btn.on, .btn[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+.btn.rec.on { background: var(--rec); color: #fff; }
 .btn.rec { color: var(--rec); }
 .btn.big { min-height: 56px; font-size: 18px; padding: 0 28px; }
 select { background: var(--raise); border: 1px solid var(--line); border-radius: var(--r-s); min-height: 34px; padding: 0 8px; }
@@ -100,11 +100,12 @@ main { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(380p
 #groups .btn { flex: 1; font-size: 20px; }
 #pads { flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(4, 1fr); gap: var(--gap); touch-action: none; }
 .pad { position: relative; background: linear-gradient(180deg, var(--pad-top), var(--pad)); border: 1px solid var(--pad-line); border-radius: var(--r-m);
-  display: flex; flex-direction: column; justify-content: space-between; padding: 8px 10px; touch-action: none; overflow: hidden;
+  display: flex; flex-direction: column; justify-content: flex-start; padding: 8px 10px; touch-action: none; overflow: hidden;
   box-shadow: 0 var(--lift, 3px) 0 var(--edge), inset 0 1px 0 rgba(255,255,255,.07); transition: transform .04s; }
-.pad .num { font: 700 20px ui-monospace, Menlo, monospace; color: var(--pad-text); opacity: .9; }
-.pad .nm { font-size: 11px; color: var(--pad-dim); line-height: 1.15; max-height: 2.4em; overflow: hidden; word-break: break-word; }
-.pad .id { position: absolute; top: 8px; right: 10px; font: 11px ui-monospace, Menlo, monospace; color: var(--pad-dim); }
+.pad .num { position: absolute; left: 10px; top: 8px; font: 700 20px ui-monospace, Menlo, monospace; color: var(--pad-text); opacity: .9; }
+.pad .nm { text-align: right; padding-left: 18px; margin-top: 3px; font-size: 11px; color: var(--pad-dim); line-height: 1.15; max-height: 2.4em; overflow: hidden; word-break: break-word; }
+.pad .num.long { font-size: 14px; line-height: 20px; }
+.pad .id { text-align: right; min-height: 1.15em; font: 11px/1.15 ui-monospace, Menlo, monospace; color: var(--pad-dim); }
 .pad.sel { outline: 2px solid var(--accent2); outline-offset: -2px; }
 .pad.empty .nm { opacity: .4; }
 .pad.lit, .pad:active { background: linear-gradient(180deg, var(--pad-hi), var(--pad-lit)); transform: translateY(2px); box-shadow: 0 1px 0 var(--edge); }
@@ -219,7 +220,7 @@ html.compact #bpmVal { min-width: 48px; }
 html.compact #btnMore { order: 3; margin-left: auto; }
 html.compact #top .extra { display: none; order: 10; }
 html.compact #top.open .extra { display: inline-flex; align-items: center; gap: 6px; }
-html.compact #top.open #btnMore, html.compact #btnTools[aria-expanded="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+html.compact #top.open #btnMore, html.compact #btnTools[aria-expanded="true"] { background: var(--accent); color: var(--on-accent); }
 /* Views */
 html.compact .v-pads #panel { display: contents; }
 html.compact .v-pads #tabBody, html.compact .v-panel #deck { display: none; }
@@ -305,7 +306,7 @@ html.hw #app { display: flex; flex-direction: column; width: 100%; max-width: 76
 
 /* Transport at the bottom */
 html.hw #top { order: 2; justify-content: space-between; gap: 6px; padding: 8px 10px; border-top: var(--bw) solid var(--line); border-bottom: 0; background: var(--body); }
-html.hw #btnStop, html.hw #btnPlay, html.hw #btnRec { min-width: 48px; min-height: 52px; font-size: 18px; }
+html.hw #btnStop, html.hw #btnPlay, html.hw #btnRec { width: 44px; height: 44px; min-width: 44px; min-height: 44px; padding: 0; font-size: 18px; }
 html.hw #bpmVal { min-width: 56px; font-size: 18px; }
 html.hw #btnMore { margin-left: 0; }
 
@@ -331,7 +332,6 @@ html.hw #dials .kl { min-height: 13px; font-size: 10px; }
 html.hw #fxCycle { min-width: 96px; }
 html.hw .padwrap { flex: 1; gap: 8px; }
 html.hw #side { flex: none; width: 56px; flex-direction: column; align-items: stretch; gap: 8px; }
-html.hw #side .lab { text-align: center; }
 html.hw #side .fader, html.hw #slider { flex: 1; width: 100%; height: auto; min-height: 80px; }
 html.hw #side .btn { padding: 0; font-size: 11px; letter-spacing: .02em; }
 html.hw #modesMain { grid-template-columns: repeat(8, minmax(0, 1fr)); }
@@ -341,12 +341,12 @@ html.hw #modes.sheet #modesMore { left: 50%; right: auto; transform: translateX(
 @media (max-width: 430px) { html.hw #tabs button { font-size: 10px; letter-spacing: 0; } }
 
 /* Pad LEDs: a dot in the corner. Dim ring = the pad has notes in this pattern; solid and glowing = a note on the current step. */
-.pad .led { position: absolute; right: 9px; bottom: 9px; width: 12px; height: 12px; border-radius: 50%; box-sizing: border-box;
+.pad .led { position: absolute; left: 9px; bottom: 9px; width: 12px; height: 12px; border-radius: 50%; box-sizing: border-box;
   border: 2px solid transparent; background: transparent; pointer-events: none; transition: background .06s, box-shadow .06s; }
 .pad .led.has { border-color: var(--led); opacity: .55; }
 .pad .led.hit { background: var(--led); border-color: var(--led); opacity: 1; box-shadow: 0 0 8px 2px var(--led); }
 .pad.lit .led.hit { box-shadow: 0 0 0 2px #fff; }
-.pad.rep::before { content: "REP"; position: absolute; left: 9px; bottom: 8px; font: 700 9px ui-monospace, Menlo, monospace; letter-spacing: .1em; color: var(--accent2); }
+.pad.rep::before { content: "REP"; position: absolute; left: 50%; top: 10px; transform: translateX(-50%); font: 700 9px ui-monospace, Menlo, monospace; letter-spacing: .1em; color: var(--accent2); }
 
 /* HARDWARE: a taller display with a larger step counter. */
 html.hw #lcd { padding: 10px 14px 8px; }
@@ -358,13 +358,10 @@ html.compact:not(.hw) #lcdPos { font-size: 32px; }
 
 /* SHIFT: lit while held; every control it changes shows what it will do. */
 .shiftbtn[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--on-accent); }
-#lcdShift { display: none; background: var(--accent); color: var(--on-accent); padding: 0 6px; border-radius: 3px; }
-html.shift #lcdShift { display: inline-block; }
-html.shift [data-shift] { position: relative; }
 html.shift [data-shift]::after {
   content: attr(data-shift); position: absolute; inset: 0; z-index: 3; pointer-events: none;
   display: flex; align-items: center; justify-content: center; text-align: center; padding: 0 2px;
-  background: var(--accent); color: var(--on-accent); border-radius: inherit; outline: 2px solid var(--on-accent); outline-offset: -3px;
-  font: 700 11px/1.1 -apple-system, "Segoe UI", sans-serif; letter-spacing: .02em;
+  background: var(--accent); color: var(--on-accent); border-radius: inherit;
+  font: 600 11px/1.1 -apple-system, "Segoe UI", sans-serif; letter-spacing: .02em;
 }
 html.shift .cell[data-shift]::after { border-radius: var(--r-s); }

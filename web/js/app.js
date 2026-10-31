@@ -121,7 +121,7 @@ const padsEl = $('#pads');
 const padEls = PAD_LABELS.map((lab, i) => {
   const el = document.createElement('div');
   el.className = 'pad'; el.dataset.i = i;
-  el.innerHTML = `<span class="num">${lab}</span><span class="id"></span><span class="nm"></span><i class="led" data-g="0"></i>`;
+  el.innerHTML = `<span class="num${lab.length > 1 ? ' long' : ''}">${lab}</span><span class="id"></span><span class="nm"></span><i class="led" data-g="0"></i>`;
   padsEl.append(el);
   return el;
 });
@@ -381,27 +381,41 @@ const SHIFT_LABELS = {
   '#patDn': 'BAR -', '#patUp': 'BAR +', '#barDn': 'HALF', '#barUp': 'x2', '#btnErase': 'PROJECT', '#btnSample': 'CHOP',
   '#sideFader': 'RESET VOL', '#btnPlay': 'RESTART', '#btnRepeat': 'LATCH', '#timingSel': 'CORRECT ALL',
 };
+// The overlay needs a positioned parent. Only static elements are changed, so nothing already placed (absolute, fixed, sticky) moves.
+const tagShift = (el, label) => {
+  el.dataset.shift = label;
+  if (getComputedStyle(el).position === 'static') el.style.position = 'relative';
+};
 for (const [sel, label] of Object.entries(SHIFT_LABELS)) {
   const el = $(sel); if (!el) continue;
-  (el.tagName === 'SELECT' ? el.parentElement : el).dataset.shift = label;
+  tagShift(el.tagName === 'SELECT' ? el.parentElement : el, label);
 }
-['UNDO', 'COPY', 'PASTE'].forEach((label, i) => { if (groupEls[i + 1]) groupEls[i + 1].dataset.shift = label; });
-const lcdShift = document.createElement('span'); lcdShift.id = 'lcdShift'; lcdShift.textContent = 'SHIFT';
-$('#lcd .l1').append(lcdShift);
+['UNDO', 'COPY', 'PASTE'].forEach((label, i) => { if (groupEls[i + 1]) tagShift(groupEls[i + 1], label); });
 
-// SHIFT is held, like the hardware key. The Shift key on a keyboard does the same.
+// SHIFT: hold it for a momentary shift, or tap it to latch it on; tap again to release. The Shift key on a keyboard is momentary.
+let shiftLatched = false;
 const setShift = (on) => {
   if (A.shift === on) return;
   A.shift = on; document.documentElement.classList.toggle('shift', on); A.refreshModes();
 };
 for (const id of ['#btnShift', '#sideShift']) {
   const b = $(id);
-  b.addEventListener('pointerdown', (e) => { e.preventDefault(); try { b.setPointerCapture(e.pointerId); } catch { /* not capturable */ } setShift(true); });
-  for (const ev of ['pointerup', 'pointercancel']) b.addEventListener(ev, () => setShift(false));
+  let downAt = 0, wasLatched = false;
+  b.addEventListener('pointerdown', (e) => {
+    e.preventDefault(); try { b.setPointerCapture(e.pointerId); } catch { /* not capturable */ }
+    downAt = performance.now(); wasLatched = shiftLatched; setShift(true);
+  });
+  b.addEventListener('pointerup', () => {
+    if (wasLatched) shiftLatched = false;
+    else if (performance.now() - downAt < 350) shiftLatched = true;
+    if (!shiftLatched) setShift(false);
+    document.documentElement.classList.toggle('shift-latched', shiftLatched);
+  });
+  b.addEventListener('pointercancel', () => { if (!shiftLatched) setShift(false); });
 }
 addEventListener('keydown', (e) => { if (e.key === 'Shift') setShift(true); });
-addEventListener('keyup', (e) => { if (e.key === 'Shift') setShift(false); });
-addEventListener('blur', () => setShift(false));
+addEventListener('keyup', (e) => { if (e.key === 'Shift' && !shiftLatched) setShift(false); });
+addEventListener('blur', () => { if (!shiftLatched) setShift(false); });
 bind('#btnCommit', () => {
   const n = nextFreeScene(A.project);
   if (n > 99) return A.toast('All 99 scenes are used');
