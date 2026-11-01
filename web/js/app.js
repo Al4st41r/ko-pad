@@ -623,7 +623,8 @@ addEventListener('pointerdown', (e) => {
 }, true);
 
 // Pad LEDs, as on the hardware: a pad lights when it holds a note. A small dot shows a pad that has notes in the pattern;
-// while playing, the dot is lit on the pads that have a note on the current step (the STEP grid's step size).
+// while playing, the dot is lit on the pads that have a note on the current step (the STEP grid's step size); with STEP selected
+// and stopped, it follows the step cursor.
 const LED_COLOURS = ['--led-a', '--led-b', '--led-c', '--led-d'];
 function updateLeds(pos) {
   const playing = pos !== null && pos >= 0;
@@ -635,6 +636,9 @@ function updateLeds(pos) {
     if (playing) {
       const base = A.seq.songMode ? pos - A.seq.sceneStart : pos;
       from = Math.floor((base % patternTicks(pat)) / grid) * grid; to = from + grid;
+    } else if (A.param === 'step' && !A.seq.playing) {
+      // Stepping with STEP selected: the dot shows the pads that have a hit on the cursor's step.
+      from = Math.min(A.stepCur, stepTotal() - 1) * STEP_TICKS; to = from + STEP_TICKS;
     }
     for (const ev of pat.ev) { has.add(ev.p); if (ev.t >= from && ev.t < to) hit.add(ev.p); }
   }
