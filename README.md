@@ -241,6 +241,10 @@ There is no build. Edit files in `web/` and reload.
 - Data on the device: projects are in `localStorage` under `ko.proj.N`, settings under `ko.settings`, and imported or recorded sounds in the IndexedDB database `ko-samples`.
 - Themes are CSS custom properties set by `data-theme` on `<html>` (see the top of `web/style.css`). `web/js/look.js` sets `data-theme`, `hw` and `compact` on `<html>` before first paint. `compact` covers phones and HARDWARE, and the HARDWARE block at the end of the stylesheet only adds what differs.
 
+### Toggle buttons
+
+Buttons that stay on or off (METRO, KEYS, SHIFT latch, NOTE REPEAT, ERASE, SAMPLE, SOLO, OVERWRITE REC, EDIT NOTES, FOLLOW, MUTE) are light grey with an orange top line, so they look different from ordinary buttons. The line is dim when the toggle is off and bright, with a glow, when it is on. They carry the `tgl` class.
+
 ### SHIFT and pad lights
 
 Hold SHIFT (the side strip in HARDWARE, the mode row otherwise; the Shift key on a keyboard also works). Controls that change are outlined while it is held.

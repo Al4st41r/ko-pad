@@ -1,5 +1,5 @@
 // KO Pad service worker. Shell: stale-while-revalidate. Samples: cache-first.
-const VERSION = 'v27';
+const VERSION = 'v28';
 const SHELL = `kopad-shell-${VERSION}`;
 const SAMPLES = 'kopad-samples-v1';
 const ASSETS = [
