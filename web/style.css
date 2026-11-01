@@ -104,7 +104,7 @@ main { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(380p
 #lcd .l1 { flex-wrap: wrap; }
 /* Step counter: large digits, the main thing on the display, as on the hardware. */
 #lcd .lcd-pos { flex: none; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; }
-#lcdPos { font-weight: 700; font-size: 44px; line-height: 1; letter-spacing: .04em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+#lcdPos { min-width: 6ch; text-align: right; font-weight: 700; font-size: 44px; line-height: 1; letter-spacing: .04em; font-variant-numeric: tabular-nums; white-space: nowrap; }
 #lcd .poslab { font-size: 9px; letter-spacing: .24em; opacity: .65; margin-top: 3px; }
 #lcd .l2 { font-size: 13px; opacity: .8; min-height: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .meter { height: 4px; background: rgba(0,0,0,.12); border-radius: var(--r-s); margin-top: 4px; overflow: hidden; }

@@ -194,15 +194,9 @@ A.refreshModes = () => {
 };
 
 A.refreshLcd = () => {
-  const grp = A.grp(), pat = getPattern(A.project, A.g);
+  const grp = A.grp();
   $('#lcdProj').textContent = `P${A.pi}`;
-  $('#lcdGrp').textContent = `GRP ${GROUPS[A.g]}`;
   $('#lcdPat').textContent = `PAT ${String(grp.cur).padStart(2, '0')}`;
-  $('#lcdBars').textContent = `${pat ? pat.bars : 1} BAR${pat && pat.bars > 1 ? 'S' : ''} ${pat ? beatsOf(pat) : 4}/4`;
-  const pad = grp.pads[A.keys ? A.keysPad : A.sel];
-  $('#lcdSample').textContent = A.keys
-    ? `KEYS  ${A.sampleName(grp.pads[A.keysPad].s)}  OCT ${A.oct}`
-    : `${PAD_LABELS[A.sel]}  ${pad.s ? `${pad.s} ${A.sampleName(pad.s)}` : 'EMPTY'}`;
 };
 
 A.refresh = () => {

@@ -243,7 +243,7 @@ There is no build. Edit files in `web/` and reload.
 
 ### Cycle buttons
 
-Buttons that move through several options (PATTERN, SOUND, STEP, TIMING and the FX button) are light grey with an orange top line, so they look different from ordinary buttons and from the on/off switches (KEYS, SHIFT, NOTE REPEAT and so on, which fill orange when on). On the value selector the line is bright, with a glow, on the chosen value; on the FX button it is bright while an effect is active. They carry the `cyc` class.
+Buttons that move through several options (TIMING and the FX button) are light grey with an orange top line, so they look different from ordinary buttons and from the on/off switches (KEYS, SHIFT, NOTE REPEAT and so on, which fill orange when on). On TIMING the line is bright while a timing value is chosen; on the FX button it is bright while an effect is active. PATTERN, SOUND and STEP only choose what - and + change, so they are plain buttons that fill orange when chosen. They carry the `cyc` class.
 
 ### SHIFT and pad lights
 

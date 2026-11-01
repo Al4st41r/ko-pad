@@ -168,7 +168,8 @@ with sync_playwright() as p:
 
     # 3/4 time: a one-hit pattern loops every 1.5 s at 120 bpm
     pg.evaluate("A.seq.songMode=false; A.project.bpm=120; A.engine.setBpm(120); A.project.groups[0].patterns={'1':{bars:1,beats:3,ev:[{t:0,p:9,v:100,d:24}]}}; A.project.groups[0].cur=1; A.refresh(); A.engine.triggerCount=0")
-    check("beats control shows the pattern's signature", pg.inner_text("#lcdBars").endswith("3/4"), pg.inner_text("#lcdBars"))
+    pg.click("#pmTiming"); pg.click("#pmTiming"); pg.click("#pmTiming")  # BPM, BARS, BEATS /4
+    check("beats control shows the pattern's signature", pg.inner_text("#pmTiming").startswith("BEATS") and pg.inner_text("#pmVal") == "3", pg.inner_text("#pmVal"))
     pg.click("#btnPlay"); pg.wait_for_timeout(3400); pg.click("#btnStop")
     n = pg.evaluate("A.engine.triggerCount")
     check("a 3/4 pattern loops after three beats", n == 3, str(n))
