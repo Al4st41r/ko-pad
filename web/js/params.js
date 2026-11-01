@@ -35,7 +35,7 @@ export function nextSound(ids, current, dir) {
   if (!ids.length) return current;
   const i = ids.indexOf(current);
   if (i < 0) return dir > 0 ? ids[0] : ids[ids.length - 1];
-  return ids[(i + dir + ids.length) % ids.length];
+  return ids[(((i + dir) % ids.length) + ids.length) % ids.length];
 }
 
 // The step cursor: a 0-based sixteenth-note position, wrapping inside the pattern.

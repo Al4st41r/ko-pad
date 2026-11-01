@@ -159,6 +159,10 @@ function soundTab(A, body) {
   L.append(h(`<h3>SAMPLE FOR PAD ${PAD_LABELS[A.sel]} (GROUP ${GROUPS[A.g]})</h3>`));
   const num = h(`<div class="row tight"><input id="num" type="number" inputmode="numeric" min="1" max="999" placeholder="Sample number" style="width:180px" value=""><button class="btn small" id="go">ASSIGN</button><button class="btn small" id="clr">EMPTY PAD</button></div>`);
   L.append(num);
+  const cyc = h(`<div class="row tight"><button class="btn small" id="sp">&minus; PREVIOUS</button><button class="btn small" id="sn">NEXT +</button><span class="dim">${id ? esc(`${id} ${A.sampleName(id)}`) : 'Empty pad'}. Step through the sounds for this pad.</span></div>`);
+  L.append(cyc);
+  cyc.querySelector('#sp').onclick = () => A.stepSound(-1);
+  cyc.querySelector('#sn').onclick = () => A.stepSound(1);
   const chips = h(`<div class="chips">${cats.map((c) => `<button class="btn small ${c === soundState.cat ? 'on' : ''}" data-c="${c}">${c}</button>`).join('')}</div>`);
   L.append(chips);
   L.append(h(`<div class="row"><input id="q" type="search" placeholder="Search names" style="width:100%" value="${esc(soundState.q)}"></div>`));

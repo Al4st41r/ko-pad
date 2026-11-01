@@ -181,7 +181,9 @@ A.refreshModes = () => {
     b.classList.toggle('on', on); b.setAttribute('aria-pressed', on);
   }
   $('#pmTiming').textContent = timing ? PARAMS.find((q) => q.id === A.param).label : 'TIMING';
-  $('#pmVal').textContent = act.get();
+  const val = String(act.get());
+  $('#pmVal').textContent = val; $('#pmVal').classList.toggle('sm', val.length > 6);
+  $('#pmSound').classList.toggle('typing', !!A.soundLatch && A.param === 'sound');
   for (const [i, id] of ['#pmDn', '#pmUp'].entries()) {
     const el = $(id); if (A.shift && act.shift) tagShift(el, act.shift[i]); else delete el.dataset.shift;
   }
@@ -193,10 +195,11 @@ A.refreshModes = () => {
   $('#btnPlay').classList.toggle('on', A.seq.playing); $('#btnRec').classList.toggle('on', A.seq.recording);
 };
 
+const patName = () => `${GROUPS[A.g]}${String(A.grp().cur).padStart(2, '0')}`;  // group letter and pattern number, e.g. A01, B03
 A.refreshLcd = () => {
   const grp = A.grp();
   $('#lcdProj').textContent = `P${A.pi}`;
-  $('#lcdPat').textContent = `PAT ${String(grp.cur).padStart(2, '0')}`;
+  $('#lcdPat').textContent = patName();
 };
 
 A.refresh = () => {
@@ -308,6 +311,7 @@ padsEl.addEventListener('pointerdown', (e) => {
   const el = e.target.closest('.pad'); if (!el || !A.engine.ctx) return;
   e.preventDefault();
   const i = +el.dataset.i;
+  if (typing()) { soundKey(i); el.classList.add('lit'); down.set(e.pointerId, { el, erase: true }); return; }
   if (A.erase) {
     const pat = A.pattern();
     if (pat) { A.beforeEdit(A.g, pat); clearPad(pat, i); A.save(); A.toast(`Cleared pad ${PAD_LABELS[i]} in this pattern`); A.renderPanel(); }
@@ -366,15 +370,38 @@ function shiftPattern(d) {
 const patStep = (d) => { const g = A.grp(); g.cur = stepValue('pattern', g.cur, d); A.save(); A.refresh(); };
 const bars = (d) => { const pat = A.pattern(true); A.beforeEdit(A.g, pat); setBars(pat, pat.bars + d); A.save(); A.refresh(); };
 const beats = (d) => { const pat = A.pattern(true); A.beforeEdit(A.g, pat); setBeats(pat, beatsOf(pat) + d); A.save(); A.refresh(); };
-// SOUND: -/+ steps the selected pad through the sounds (the factory catalogue, then your own), and plays each one.
+// SOUND, as on the device: choose a pad, then - / + change its sound (SHIFT steps ten at a time), or hold SOUND and type the number on the pads
+// (7 8 9 / 4 5 6 / 1 2 3 / . 0 ENT: . deletes a digit, ENT sets the sound, 000 empties the pad). Tap SOUND a second time to type without holding it.
 const soundPad = () => A.pad(A.keys ? A.keysPad : A.sel);
 const soundIds = () => [...A.catalogue.map((c) => c.id), ...userSamples.list().map((u) => u.id)].sort((a, b) => a - b);
-function stepSound(d) {
-  const pad = soundPad(), sid = nextSound(soundIds(), pad.s, d);
-  if (!sid) return A.toast('No sounds yet. Import some in the SOUND tab.');
+const soundAvailable = (n) => A.byId.has(n) || userSamples.meta.has(n);
+A.soundDigits = '';
+const typing = () => A.soundHeld || (A.param === 'sound' && A.soundLatch);
+function setSound(pad, sid) {
   pad.s = sid; pad.start = 0; pad.end = 1;
-  if (A.engine.ctx) A.engine.load(sid).then(() => A.engine.preview(sid)).catch(() => A.toast(`Sample ${sid} could not be loaded`));
+  if (sid && A.engine.ctx) A.engine.load(sid).then(() => A.engine.preview(sid)).catch(() => A.toast(`Sample ${sid} could not be loaded`));
   A.save(); A.refreshPads(); A.refreshLcd(); A.refreshModes(); A.renderPanel();
+}
+function stepSound(d) {
+  const pad = soundPad(), sid = nextSound(soundIds(), pad.s, d * (A.shift ? 10 : 1));
+  if (!sid) return A.toast('No sounds yet. Import some in the SOUND tab.');
+  setSound(pad, sid);
+}
+A.stepSound = stepSound;
+function applySoundNumber() {
+  const typed = A.soundDigits, n = +typed;
+  A.soundDigits = ''; A.soundLatch = false;
+  if (!typed) return A.refreshModes();
+  if (n === 0) { setSound(soundPad(), 0); return A.toast('Pad emptied'); }
+  if (!soundAvailable(n)) { A.refreshModes(); return A.toast(`Sound ${n} is not available`); }
+  setSound(soundPad(), n);
+}
+function soundKey(i) {
+  const key = PAD_LABELS[i];
+  if (/^\d$/.test(key)) A.soundDigits = (A.soundDigits.length >= 3 ? '' : A.soundDigits) + key;
+  else if (key === '.') A.soundDigits = A.soundDigits.slice(0, -1);
+  else if (key === 'ENT') return applySoundNumber();
+  A.refreshModes();
 }
 // STEP: a cursor in sixteenth notes. -/+ moves it through the pattern; while stopped, a pad press puts a hit at the cursor and moves on.
 const STEP_TICKS = PPQ / 4;
@@ -395,17 +422,33 @@ function stepEnter(padIdx, vel) {
 // One -/+ pair for every value, like the device: the selector button picks the target.
 // SHIFT + PATTERN -/+ moves between bars or nudges a held pad; SHIFT + BARS -/+ halves or doubles the pattern.
 const PARAM_ACTIONS = {
-  pattern: { get: () => A.grp().cur, step: (d) => (A.shift ? shiftPattern(d) : patStep(d)), shift: ['BAR -', 'BAR +'] },
+  pattern: { get: patName, step: (d) => (A.shift ? shiftPattern(d) : patStep(d)), shift: ['BAR -', 'BAR +'] },
   bars: { get: () => getPattern(A.project, A.g)?.bars ?? 1, step: (d) => (A.shift ? $(d < 0 ? '#btnHalf' : '#btnX2').click() : bars(d)), shift: ['HALF', 'x2'] },
   bpm: { get: () => Math.round(A.project.bpm), step: (d) => setBpm(A.project.bpm + d) },
   beats: { get: () => { const p = getPattern(A.project, A.g); return p ? beatsOf(p) : 4; }, step: beats },
   octave: { get: () => A.oct, step: (d) => { A.oct = stepValue('octave', A.oct, d); A.refresh(); } },
-  sound: { get: () => soundPad().s || '--', step: stepSound },
+  sound: { get: () => (typing() ? `${A.soundDigits}_` : soundPad().s ? `${soundPad().s} ${A.sampleName(soundPad().s)}` : '--'), step: stepSound },
   step: { get: () => stepText(A.stepCur, stepBeats()), step: (d) => moveCursor(d) },
 };
 A.param = A.param || 'pattern';
-const selectParam = (id) => { A.param = id; A.refreshModes(); A.renderPanel(); };
-for (const id of ['pattern', 'sound', 'step']) bind(`#pm${id[0].toUpperCase()}${id.slice(1)}`, () => selectParam(id));
+const selectParam = (id) => { A.param = id; if (id !== 'sound') { A.soundLatch = false; A.soundDigits = ''; } A.refreshModes(); A.renderPanel(); };
+for (const id of ['pattern', 'step']) bind(`#pm${id[0].toUpperCase()}${id.slice(1)}`, () => selectParam(id));
+// SOUND: hold it and type a number on the pads, or tap it to choose the SOUND value (tap again to type without holding).
+const soundBtn = $('#pmSound');
+soundBtn.addEventListener('pointerdown', (e) => {
+  A.soundHeld = true; if (!A.soundLatch) A.soundDigits = '';
+  try { soundBtn.setPointerCapture(e.pointerId); } catch { /* not capturable */ }
+  A.refreshModes();
+});
+const soundRelease = () => {
+  if (!A.soundHeld) return;
+  A.soundHeld = false;
+  if (A.soundDigits && !A.soundLatch) applySoundNumber();
+  else if (A.param === 'sound') { A.soundLatch = !A.soundLatch; A.soundDigits = ''; }
+  selectParam('sound');
+};
+soundBtn.addEventListener('pointerup', soundRelease);
+soundBtn.addEventListener('pointercancel', soundRelease);
 // TIMING cycles tempo, bars, beats and octave, as the device's TIMING button does; the first press goes to tempo.
 bind('#pmTiming', () => selectParam(TIMING.includes(A.param) ? nextTiming(A.param) : TIMING[0]));
 bind('#pmDn', () => PARAM_ACTIONS[A.param].step(-1));
