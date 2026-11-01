@@ -7,7 +7,7 @@
   --sel: #fff; --playhead: #fff; --cap: #e8e6e1; --toast: #000d; --erasing: #5a1c1c; --ok: #7bd88f; --ok-line: #2e5a3a; --shade: .35;
   --knob-base: #2d3036; --knob-cap: #3a3d45; --knob-line: #0c0d0f;
   --led-a: #ff5a1f; --led-b: #35d07f; --led-c: #3fa9ff; --led-d: #ff4fd0;
-  --tgl: #d4d4d0; --tgl-down: #bcbcb8; --tgl-ink: #141414;
+  --cyc: #d4d4d0; --cyc-down: #bcbcb8; --cyc-ink: #141414;
   --r-s: 8px; --r-m: 10px; --r-l: 14px; --r-pill: 99px; --gap: 8px; --bw: 1px;
 }
 /* Themes. Set with data-theme on <html>. DARK is the default above.
@@ -46,16 +46,24 @@ button, select, input { font: inherit; color: inherit; }
 .btn.small { min-height: 34px; min-width: 34px; padding: 0 9px; font-size: 12px; }
 .btn.accent, .btn.on, .btn[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
 .btn.rec.on { background: var(--rec); color: #fff; }
-/* Toggle buttons (on or off, they keep their state): light grey with an orange top line. The line is dim when off, bright with a glow when on. */
-.btn.tgl { background: var(--tgl); color: var(--tgl-ink); box-shadow: inset 0 3px 0 var(--accent-dk); }
-.btn.tgl:active { background: var(--tgl-down); }
-.btn.tgl.on, .btn.tgl[aria-pressed="true"] { background: var(--tgl); color: var(--tgl-ink); box-shadow: inset 0 4px 0 var(--accent), 0 0 10px -2px var(--accent); }
+/* Cycle buttons (each press moves to the next option: PATTERN, SOUND, STEP, TIMING, FX): light grey with an orange top line.
+   The line is dim when nothing is selected or the effect is off, and bright with a glow when selected or on. */
+.btn.cyc { background: var(--cyc); color: var(--cyc-ink); box-shadow: inset 0 3px 0 var(--accent-dk); }
+.btn.cyc:active { background: var(--cyc-down); }
+.btn.cyc.on, .btn.cyc[aria-pressed="true"] { background: var(--cyc); color: var(--cyc-ink); box-shadow: inset 0 4px 0 var(--accent), 0 0 10px -2px var(--accent); }
 .btn.rec { color: var(--rec); }
 .btn.big { min-height: 56px; font-size: 18px; padding: 0 28px; }
 select { background: var(--raise); border: 1px solid var(--line); border-radius: var(--r-s); min-height: 34px; padding: 0 8px; }
 .dim { color: var(--dim); }
 .lab { font-size: 10px; color: var(--dim); letter-spacing: .1em; }
-.cell.param #pmSel { min-width: 92px; }
+/* The value selector: PATTERN, SOUND, STEP and TIMING pick what the big - and + change. */
+.cell.param { flex-wrap: wrap; }
+.psel, .pstep { display: flex; align-items: stretch; gap: 6px; flex: 1 1 100%; }
+.psel .btn { flex: 1 1 0; padding: 0 4px; }
+.pstep { align-items: center; }
+.pmbtn { flex: 0 0 76px; min-height: 54px; font-size: 30px; line-height: 1; font-weight: 700; letter-spacing: 0; background: var(--pad); color: var(--pad-text); border: 1px solid var(--pad-line); box-shadow: 0 2px 0 var(--pad-line); }
+.pmbtn:active { background: var(--accent); color: var(--on-accent); transform: translateY(1px); box-shadow: none; }
+.pstep .val { flex: 1; font-size: 26px; }
 #bpmVal { background: none; border: 1px solid transparent; border-radius: var(--r-s); color: inherit; padding: 4px 6px; cursor: ns-resize; }
 #bpmVal.sel { border-color: var(--accent); color: var(--accent); }
 .val { min-width: 40px; text-align: center; font: 600 15px ui-monospace, "SF Mono", Menlo, monospace; }
@@ -156,6 +164,7 @@ input[type=text], input[type=number], input[type=search] { background: var(--rai
 .sc.beat { border-right-color: var(--grid-beat); }
 .sc.bar { border-right: 2px solid var(--grid-bar); }
 .sc.alt { background: var(--alt); }
+.sc.cur::before { content: ""; position: absolute; inset: 0; background: var(--accent); opacity: .28; pointer-events: none; }
 .sc.sel { outline: 2px solid var(--sel); outline-offset: -2px; }
 .sc.on::after { content: ""; position: absolute; inset: 4px 2px; border-radius: var(--r-s); background: var(--accent); opacity: calc(.35 + var(--v, 1) * .65); }
 .playhead { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--playhead); opacity: .7; pointer-events: none; z-index: 3; display: none; }
@@ -365,6 +374,7 @@ html.hw #lcd .poslab { font-size: 10px; }
 html.compact:not(.hw) #lcdPos { font-size: 32px; }
 
 /* SHIFT: lit while held; every control it changes shows what it will do. */
+.shiftbtn[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--on-accent); }
 html.shift [data-shift]::after {
   content: attr(data-shift); position: absolute; inset: 0; z-index: 3; pointer-events: none;
   display: flex; align-items: center; justify-content: center; text-align: center; padding: 0 2px;

@@ -35,10 +35,10 @@ function stepTab(A, body) {
     <span class="lab">GRID</span><select id="sg">${gridOpts}</select>
     <span class="lab">VELOCITY</span><input id="sv" type="range" min="10" max="127" value="${stepVel}" style="width:110px">
     <button class="btn small" id="cp">COPY</button><button class="btn small" id="ps">PASTE</button><button class="btn small" id="cl">CLEAR</button>
-    <button class="btn tgl small ${A.stepEdit ? 'on' : ''}" id="ed" aria-pressed="${!!A.stepEdit}">EDIT NOTES</button>
+    <button class="btn small ${A.stepEdit ? 'on' : ''}" id="ed" aria-pressed="${!!A.stepEdit}">EDIT NOTES</button>
     ${pages > 1 ? `<span class="lab">BARS ${A.stepPage * STEP_PAGE_BARS + 1} TO ${Math.min(bars, (A.stepPage + 1) * STEP_PAGE_BARS)}</span>
     <button class="btn small" id="pp" ${A.stepPage ? '' : 'disabled'}>&lsaquo;</button><button class="btn small" id="pn" ${A.stepPage < pages - 1 ? '' : 'disabled'}>&rsaquo;</button>
-    <button class="btn tgl small ${A.stepFollow !== false ? 'on' : ''}" id="pf" aria-pressed="${A.stepFollow !== false}">FOLLOW</button>` : ''}
+    <button class="btn small ${A.stepFollow !== false ? 'on' : ''}" id="pf" aria-pressed="${A.stepFollow !== false}">FOLLOW</button>` : ''}
   </div>`);
   body.append(head);
   head.querySelector('#sg').onchange = (e) => { A.stepGrid = e.target.value; A.renderPanel(); };
@@ -77,6 +77,7 @@ function stepTab(A, body) {
       if (Math.floor(tick / 96) % 2) cls.push('alt');
       const v = on.get(`${r}:${c}`);
       if (v !== undefined) cls.push('on');
+      if (A.param === 'step' && A.stepCur * 24 >= tick && A.stepCur * 24 < endT) cls.push('cur');
       if (A.selEv && A.selEv.ev.p === r && Math.floor(A.selEv.ev.t / grid) === c) cls.push('sel');
       const d = document.createElement('div');
       d.className = cls.join(' '); d.dataset.r = r; d.dataset.c = c;
@@ -534,7 +535,7 @@ function mixTab(A, body) {
   body.append(h('<h3>GROUP LEVELS</h3>'));
   const mix = h('<div class="mix"></div>');
   A.project.groups.forEach((g, i) => {
-    const ch = h(`<div class="chan"><button class="btn tgl small ${g.mute ? 'on' : ''}" data-m="${i}">MUTE</button></div>`);
+    const ch = h(`<div class="chan"><button class="btn small ${g.mute ? 'on' : ''}" data-m="${i}">MUTE</button></div>`);
     ch.prepend(fader(g.vol, (v) => { g.vol = v; A.engine.setGroupLevel(i, v, g.mute); A.seq.recordAuto(i, v); A.save(); }));
     ch.append(h(`<div class="val">${GROUPS[i]}</div>`));
     const sd = h(`<div><div class="lab" style="text-align:center">FX SEND</div><input type="range" min="0" max="1" step="0.01" value="${g.send ?? 1}" style="width:72px"></div>`);

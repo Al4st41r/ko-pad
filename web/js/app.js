@@ -1,8 +1,8 @@
 // App shell: state, deck (LCD, groups, pads, mode row), transport, persistence, boot.
-import { GROUPS, PAD_LABELS, GRIDS, STEP_PAGE_BARS, PROJECT_COUNT, PATTERNS_PER_GROUP, MAX_BARS, NOTE_NAMES, EFFECTS, USER_SAMPLE_MIN } from './data.js';
-import { factoryProject, normaliseProject, getPattern, setBars, setBeats, beatsOf, clearPad, nextEmptyPattern, doubleLength, halveLength, correctEvents, clearPattern, padSemitone, scaleNote, nudgeEvent, copyOf, pasteInto, patternTicks, nextFreeScene, sceneFromCurrent, UndoStack, ticksToPosition } from './model.js';
+import { PPQ, GROUPS, PAD_LABELS, GRIDS, STEP_PAGE_BARS, PROJECT_COUNT, PATTERNS_PER_GROUP, MAX_BARS, NOTE_NAMES, EFFECTS, USER_SAMPLE_MIN } from './data.js';
+import { factoryProject, normaliseProject, getPattern, setBars, setBeats, beatsOf, clearPad, nextEmptyPattern, doubleLength, halveLength, correctEvents, clearPattern, padSemitone, scaleNote, nudgeEvent, copyOf, pasteInto, patternTicks, nextFreeScene, sceneFromCurrent, UndoStack, ticksToPosition, toggleStep } from './model.js';
 import { Engine } from './audio.js';
-import { PARAMS, cycleParam, stepValue } from './params.js';
+import { PARAMS, TIMING, nextTiming, nextSound, moveStep, stepText, stepValue } from './params.js';
 import { Sequencer } from './seq.js';
 import { storage, userSamples } from './store.js';
 import { TABS, renderTab, storeBuffer, knob, fader } from './panels.js';
@@ -175,7 +175,12 @@ A.refreshPads = () => {
 A.refreshModes = () => {
   const grp = A.grp(), pat = getPattern(A.project, A.g);
   const act = PARAM_ACTIONS[A.param];
-  $('#pmSel').textContent = PARAMS.find((q) => q.id === A.param).label;
+  const timing = TIMING.includes(A.param);
+  for (const b of document.querySelectorAll('.psel [data-p]')) {
+    const on = b.dataset.p === 'timing' ? timing : b.dataset.p === A.param;
+    b.classList.toggle('on', on); b.setAttribute('aria-pressed', on);
+  }
+  $('#pmTiming').textContent = timing ? PARAMS.find((q) => q.id === A.param).label : 'TIMING';
   $('#pmVal').textContent = act.get();
   for (const [i, id] of ['#pmDn', '#pmUp'].entries()) {
     const el = $(id); if (A.shift && act.shift) tagShift(el, act.shift[i]); else delete el.dataset.shift;
@@ -226,6 +231,7 @@ A.refreshDials = () => {
   dials[1].setValue(p ? p[1] : 0.5, def ? def.y : '');
   dials.forEach((d) => d.classList.toggle('off', !def));
   $('#fxCycle').textContent = def ? def.label : 'FX OFF';
+  $('#fxCycle').classList.toggle('on', !!def);
 };
 // Volume slider in the side strip: the same main level as the MAIN fader in MIX.
 const slider = fader(A.settings.master, (v) => { A.settings.master = v; A.engine.setMaster(v); A.saveSettings(); });
@@ -330,6 +336,7 @@ padsEl.addEventListener('pointerdown', (e) => {
   if (latch) { A.latched.set(lkey, padIdx); el.classList.add('rep'); }
   if (A.repeat) A.seq.startRepeat(A.g, padIdx, vel, semis);
   else A.seq.padDown(A.g, padIdx, vel, semis);
+  if (A.param === 'step' && !A.seq.playing && !A.keys && !A.repeat) stepEnter(padIdx, vel);
   if (A.panelDirty && A.tab === 'STEP') { A.panelDirty = false; A.renderPanel(); }
 });
 const release = (e) => {
@@ -365,6 +372,32 @@ function shiftPattern(d) {
 const patStep = (d) => { const g = A.grp(); g.cur = stepValue('pattern', g.cur, d); A.save(); A.refresh(); };
 const bars = (d) => { const pat = A.pattern(true); A.beforeEdit(A.g, pat); setBars(pat, pat.bars + d); A.save(); A.refresh(); };
 const beats = (d) => { const pat = A.pattern(true); A.beforeEdit(A.g, pat); setBeats(pat, beatsOf(pat) + d); A.save(); A.refresh(); };
+// SOUND: -/+ steps the selected pad through the sounds (the factory catalogue, then your own), and plays each one.
+const soundPad = () => A.pad(A.keys ? A.keysPad : A.sel);
+const soundIds = () => [...A.catalogue.map((c) => c.id), ...userSamples.list().map((u) => u.id)].sort((a, b) => a - b);
+function stepSound(d) {
+  const pad = soundPad(), sid = nextSound(soundIds(), pad.s, d);
+  if (!sid) return A.toast('No sounds yet. Import some in the SOUND tab.');
+  pad.s = sid; pad.start = 0; pad.end = 1;
+  if (A.engine.ctx) A.engine.load(sid).then(() => A.engine.preview(sid)).catch(() => A.toast(`Sample ${sid} could not be loaded`));
+  A.save(); A.refreshPads(); A.refreshLcd(); A.refreshModes(); A.renderPanel();
+}
+// STEP: a cursor in sixteenth notes. -/+ moves it through the pattern; while stopped, a pad press puts a hit at the cursor and moves on.
+const STEP_TICKS = PPQ / 4;
+const stepBeats = () => { const p = getPattern(A.project, A.g); return p ? beatsOf(p) : 4; };
+const stepTotal = () => { const p = getPattern(A.project, A.g); return Math.max(1, Math.round((p ? patternTicks(p) : PPQ * 4) / STEP_TICKS)); };
+A.stepCur = 0;
+function moveCursor(d) {
+  A.stepCur = moveStep(Math.min(A.stepCur, stepTotal() - 1), d, stepTotal());
+  if (A.tab === 'STEP') { A.stepPage = Math.floor((A.stepCur * STEP_TICKS) / (STEP_PAGE_BARS * stepBeats() * PPQ)); A.stepFollow = false; }
+  A.refreshModes(); A.renderPanel();
+}
+function stepEnter(padIdx, vel) {
+  const pat = A.pattern(true); A.beforeEdit(A.g, pat);
+  toggleStep(pat, Math.min(A.stepCur, stepTotal() - 1) * STEP_TICKS, padIdx, STEP_TICKS, Math.round(vel));
+  A.save(); moveCursor(1);
+}
+
 // One -/+ pair for every value, like the device: the selector button picks the target.
 // SHIFT + PATTERN -/+ moves between bars or nudges a held pad; SHIFT + BARS -/+ halves or doubles the pattern.
 const PARAM_ACTIONS = {
@@ -373,10 +406,14 @@ const PARAM_ACTIONS = {
   bpm: { get: () => Math.round(A.project.bpm), step: (d) => setBpm(A.project.bpm + d) },
   beats: { get: () => { const p = getPattern(A.project, A.g); return p ? beatsOf(p) : 4; }, step: beats },
   octave: { get: () => A.oct, step: (d) => { A.oct = stepValue('octave', A.oct, d); A.refresh(); } },
+  sound: { get: () => soundPad().s || '--', step: stepSound },
+  step: { get: () => stepText(A.stepCur, stepBeats()), step: (d) => moveCursor(d) },
 };
 A.param = A.param || 'pattern';
-const selectParam = (id) => { A.param = id; A.refreshModes(); };
-bind('#pmSel', () => selectParam(cycleParam(A.param)));
+const selectParam = (id) => { A.param = id; A.refreshModes(); A.renderPanel(); };
+for (const id of ['pattern', 'sound', 'step']) bind(`#pm${id[0].toUpperCase()}${id.slice(1)}`, () => selectParam(id));
+// TIMING cycles tempo, bars, beats and octave, as the device's TIMING button does; the first press goes to tempo.
+bind('#pmTiming', () => selectParam(TIMING.includes(A.param) ? nextTiming(A.param) : TIMING[0]));
 bind('#pmDn', () => PARAM_ACTIONS[A.param].step(-1));
 bind('#pmUp', () => PARAM_ACTIONS[A.param].step(1));
 bind('#btnKeys', () => { A.keys = !A.keys; if (A.keys) A.keysPad = A.sel; A.refresh(); });
@@ -578,7 +615,7 @@ const lcdPos = $('#lcdPos'), meterEl = $('#meter');
 function frame() {
   const pos = A.seq.position();
   const el = lcdPos;
-  if (pos === null) el.textContent = '--.-.-';
+  if (pos === null) el.textContent = A.param === 'step' ? stepText(Math.min(A.stepCur, stepTotal() - 1), stepBeats()) : '--.-.-';
   else if (pos < 0) el.textContent = 'COUNT';
   else { const p = ticksToPosition(Math.floor(A.seq.displayTick(pos)), A.seq.countLen); el.textContent = `${String(p.bar).padStart(2, '0')}.${p.beat}.${p.sixteenth}`; }
   updateLeds(pos);

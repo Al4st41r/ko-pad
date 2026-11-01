@@ -148,7 +148,7 @@ The pads are the instrument. The panel has six tabs.
 - LCD: project, group, pattern, length, playhead position and the name of the selected sample.
 - Group buttons A to D. Each group has 12 pads, its own 99 patterns and its own level.
 - Pads are labelled as on the hardware (7 8 9 / 4 5 6 / 1 2 3 / . 0 ENTER). The small number is the sample number. Multi-touch works.
-- As on the hardware, one - and + pair changes whichever value is selected. Each press of the selector button moves to the next: PATTERN, BARS, BPM, BEATS /4 and OCTAVE, then back to PATTERN. Tapping the tempo number in the transport bar selects BPM. BARS sets the length (1 to 99 bars). BEATS /4 sets the time signature of the pattern, from 1/4 to 12/4. Changing it drops hits past the new end (UNDO brings them back). With SHIFT held, - and + on PATTERN move between bars (or nudge a held pad), and on BARS halve or double the length.
+- As on the hardware, one large - and + pair changes whichever value is selected. Choose it with PATTERN, SOUND, STEP or TIMING. SOUND steps the selected pad through the sounds (the factory catalogue if one is installed, then your own imports) and plays each one. STEP moves a cursor through the pattern in sixteenth notes (shown as bar.beat.step on the LCD); while stopped, a pad press puts a hit at the cursor and moves on. TIMING cycles BPM, BARS, BEATS /4 and OCTAVE, starting at BPM. Tapping the tempo number in the transport bar selects BPM. BARS sets the length (1 to 99 bars). BEATS /4 sets the time signature of the pattern, from 1/4 to 12/4. Changing it drops hits past the new end (UNDO brings them back). With SHIFT held, - and + on PATTERN move between bars (or nudge a held pad), and on BARS halve or double the length.
 - TIMING sets the quantise grid used when recording live. OFF records exactly as played.
 - KEYS plays the selected pad's sound across the pads as a keyboard. OCT shifts the octave. The scale (chromatic, the seven modes, two pentatonics) is set in the PROJECT tab.
 - PATTERN TOOLS: NEXT EMPTY jumps to the next pattern with no hits. LENGTH x2 repeats the pattern into twice the bars (up to 99). LENGTH /2 keeps the first half. All are undoable.
@@ -241,9 +241,9 @@ There is no build. Edit files in `web/` and reload.
 - Data on the device: projects are in `localStorage` under `ko.proj.N`, settings under `ko.settings`, and imported or recorded sounds in the IndexedDB database `ko-samples`.
 - Themes are CSS custom properties set by `data-theme` on `<html>` (see the top of `web/style.css`). `web/js/look.js` sets `data-theme`, `hw` and `compact` on `<html>` before first paint. `compact` covers phones and HARDWARE, and the HARDWARE block at the end of the stylesheet only adds what differs.
 
-### Toggle buttons
+### Cycle buttons
 
-Buttons that stay on or off (METRO, KEYS, SHIFT latch, NOTE REPEAT, ERASE, SAMPLE, SOLO, OVERWRITE REC, EDIT NOTES, FOLLOW, MUTE) are light grey with an orange top line, so they look different from ordinary buttons. The line is dim when the toggle is off and bright, with a glow, when it is on. They carry the `tgl` class.
+Buttons that move through several options (PATTERN, SOUND, STEP, TIMING and the FX button) are light grey with an orange top line, so they look different from ordinary buttons and from the on/off switches (KEYS, SHIFT, NOTE REPEAT and so on, which fill orange when on). On the value selector the line is bright, with a glow, on the chosen value; on the FX button it is bright while an effect is active. They carry the `cyc` class.
 
 ### SHIFT and pad lights
 
