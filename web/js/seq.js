@@ -26,6 +26,7 @@ export class Sequencer {
     this.countLen = BAR_TICKS;
     this.sceneOverride = null;      // per-group pattern numbers while a song plays
     this.held = new Map();          // `${g}:${p}` -> { ev, startTick, voice }
+    this.arp = null;                // arpeggio: { g, p, notes, vel, i, timer }
     this.repeats = new Map();       // note repeat: `${g}:${p}` -> { g, p, vel, semis, timer }
     this.timer = null;
   }
@@ -38,6 +39,7 @@ export class Sequencer {
     this.recording = record;
     if (this.playing) return;
     this.engine.setBpm(this.project.bpm);
+    this.stopArp();
     this.playing = true;
     this.countLen = this._barTicks();
     this.tick = (record && countIn) ? -this.countLen : 0;
@@ -53,6 +55,7 @@ export class Sequencer {
   stop() {
     if (!this.playing) { this.recording = false; return; }
     clearInterval(this.timer); this.timer = null;
+    this.stopArp();
     this.playing = false; this.recording = false;
     this.sceneOverride = null;
     for (const h of this.held.values()) h.voice?.stop();
@@ -181,6 +184,41 @@ export class Sequencer {
       }
     }
     this._processRepeats(base, time);
+    this._processArp(base, time);
+  }
+
+  // Arpeggio: the notes collected with ARP held play in press order, one per grid line, until stopped.
+  _processArp(base, time) {
+    const a = this.arp; if (!a) return;
+    const grid = GRIDS[this.quantise] || 24;
+    if (base % grid !== 0) return;
+    const semis = a.notes[a.i++ % a.notes.length];
+    this.engine.trigger(a.g, a.p, this.project.groups[a.g].pads[a.p], a.vel, time, semis);
+    this.host.onHit?.(a.g, a.p, time);
+    if (this.recording) {
+      const pat = getPattern(this.project, a.g, this._numFor(a.g) || this.project.groups[a.g].cur, true);
+      const ev = { t: base % patternTicks(pat), p: a.p, v: a.vel, d: grid };
+      if (semis) ev.n = semis;
+      this.host.beforeEdit?.(a.g, pat, true);
+      addEvent(pat, ev);
+      this.host.onChange?.();
+    }
+  }
+
+  startArp(g, p, notes, vel = 100) {
+    this.stopArp();
+    if (!notes.length) return;
+    const a = { g, p, notes: [...notes], vel, i: 0, timer: null };
+    if (!this.playing) {
+      const fire = () => this.engine.trigger(g, p, this.project.groups[g].pads[p], vel, 0, a.notes[a.i++ % a.notes.length]);
+      fire();
+      a.timer = setInterval(fire, (GRIDS[this.quantise] || 24) * this.tickDur * 1000);
+    }
+    this.arp = a;
+  }
+
+  stopArp() {
+    if (this.arp) { clearInterval(this.arp.timer); this.arp = null; }
   }
 
   // Note repeat: held pads retrigger on every grid line, and are written to the pattern when recording.

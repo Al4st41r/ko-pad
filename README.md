@@ -277,3 +277,4 @@ Each pad has a dot. A ring means the pad has notes in the pattern. While playing
 The code is released under the [MIT licence](LICENSE). The licence covers the code only. It does not cover any sounds you add, which stay under their own terms.
 
 - TIMING is a mode: select TIMING, then knob X sets the note interval (1/1 to 1/32, including triplets), knob Y sets swing (eighths and sixteenths only), minus records quantised and plus records in free time. LIVE (hold) in the timing tools, pressed while playing, snaps the hits of any pad you then press to the interval. Note repeat stays its own button.
+- ARPEGGIO: in KEYS mode, hold ARP (in the timing tools), press several pads, then release ARP. Their notes play in press order, one per TIMING grid line, and repeat until you press a pad or leave KEYS. While recording, each note is written to the pattern. The performance loop (SHIFT and TEMPO on the device) is not built; it is a later item.

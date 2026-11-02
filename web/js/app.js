@@ -192,7 +192,7 @@ A.refreshModes = () => {
   $('#bpmVal').textContent = Math.round(A.project.bpm);
   const set = (id, on) => { const b = $(id); b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); };
   set('#btnShift', A.shift); set('#sideShift', A.shift); set('#btnKeys', A.keys); set('#sideKeys', A.keys); set('#btnMetro', A.seq.metronome); set('#btnErase', A.erase);
-  set('#btnRepeat', !!A.repeat); set('#btnLiveCorr', !!A.liveCorr); set('#btnSoloG', A.soloG === A.g); set('#btnSoloP', !!A.soloP && A.soloP.g === A.g && A.soloP.p === A.sel); set('#btnOver', !!A.overwrite); set('#btnSample', !!A.sampleMode);
+  set('#btnRepeat', !!A.repeat); set('#btnLiveCorr', !!A.liveCorr); set('#btnArp', !!A.arpHold || !!A.seq.arp); set('#btnSoloG', A.soloG === A.g); set('#btnSoloP', !!A.soloP && A.soloP.g === A.g && A.soloP.p === A.sel); set('#btnOver', !!A.overwrite); set('#btnSample', !!A.sampleMode);
   $('#btnPlay').classList.toggle('on', A.seq.playing); $('#btnRec').classList.toggle('on', A.seq.recording || (!!A.stepRec && !A.seq.playing));
 };
 
@@ -340,6 +340,9 @@ padsEl.addEventListener('pointerdown', (e) => {
   if (A.sampleMode && !A.keys && !A.grp().pads[i].s) { startSampling(e, el, i); return; }
   let padIdx = i, semis = 0;
   if (A.keys) { padIdx = A.keysPad; semis = keyNote(i); }
+  // Arpeggio: with ARP held in KEYS mode, each pad adds its note in press order; releasing ARP starts the cycle.
+  if (A.keys && A.arpHold) { A.arpNotes.push(semis); el.classList.add('lit'); down.set(e.pointerId, { el, erase: true }); A.seq.padDown(A.g, padIdx, vel, semis); down.get(e.pointerId).arpUp = () => A.seq.padUp(A.g, padIdx); return; }
+  if (A.seq.arp) { A.seq.stopArp(); A.refreshModes(); }
   else if (A.sel !== i) { A.sel = i; A.refreshPads(); A.refreshLcd(); if (A.tab === 'SOUND') A.renderPanel(); }
   el.classList.add('lit');
   try { el.setPointerCapture(e.pointerId); } catch { /* not capturable */ }
@@ -358,6 +361,7 @@ const release = (e) => {
   const d = down.get(e.pointerId); if (!d) return;
   down.delete(e.pointerId);
   d.el.classList.remove('lit', 'erasing', 'recording');
+  d.arpUp?.();
   if (d.sample) { d.sample.stop(); return; }
   if (d.repeat) { if (!d.latch) A.seq.stopRepeat(d.g, d.padIdx); }
   else if (!d.erase) A.seq.padUp(d.g, d.padIdx);
@@ -484,7 +488,7 @@ bind('#pmTiming', () => selectParam(TIMING.includes(A.param) ? nextTiming(A.para
 const pmStep = (d) => (A.stepRec && !A.seq.playing && !A.shift ? moveCursor(d) : PARAM_ACTIONS[A.param].step(d));
 bind('#pmDn', () => pmStep(-1));
 bind('#pmUp', () => pmStep(1));
-bind('#btnKeys', () => { A.keys = !A.keys; if (A.keys) A.keysPad = A.sel; A.refresh(); });
+bind('#btnKeys', () => { A.keys = !A.keys; A.seq.stopArp(); if (A.keys) A.keysPad = A.sel; A.refresh(); });
 bind('#btnUndo', () => A.undoLast());
 bind('#btnMetro', () => { A.seq.metronome = !A.seq.metronome; A.settings.metronome = A.seq.metronome; A.saveSettings(); A.refreshModes(); });
 const hold = (id, key) => {
@@ -494,6 +498,18 @@ const hold = (id, key) => {
 };
 hold('#btnRepeat', 'repeat');
 hold('#btnLiveCorr', 'liveCorr');
+// ARP (hold, KEYS mode): press pads in order, release ARP to arpeggiate them on the TIMING grid. Any pad press or leaving KEYS stops it.
+A.arpNotes = [];
+{
+  const b = $('#btnArp');
+  b.addEventListener('pointerdown', () => { if (!A.keys) return A.toast('ARP works in KEYS mode'); A.arpHold = true; A.arpNotes = []; A.seq.stopArp(); A.refreshModes(); });
+  const end = () => {
+    if (!A.arpHold) return; A.arpHold = false;
+    if (A.arpNotes.length) A.seq.startArp(A.g, A.keysPad, A.arpNotes);
+    A.arpNotes = []; A.refreshModes();
+  };
+  for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) b.addEventListener(ev, end);
+}
 // While SHIFT is down each control it changes shows what it will do (see html.shift [data-shift] in style.css).
 const SHIFT_LABELS = {
   '#btnErase': 'PROJECT', '#btnSample': 'CHOP',
