@@ -42,7 +42,7 @@ export const USER_SAMPLE_MAX = 999;
 export const PAD_LABELS = ['7', '8', '9', '4', '5', '6', '1', '2', '3', '.', '0', 'ENT'];
 
 export const GRIDS = {
-  '1/4': 96, '1/8': 48, '1/8T': 32, '1/16': 24, '1/16T': 16, '1/32': 12,
+  '1/1': 384, '1/2': 192, '1/4': 96, '1/8': 48, '1/8T': 32, '1/16': 24, '1/16T': 16, '1/32': 12,
 };
 
 // Keys-mode scales as semitone steps from the root. The pad grid walks up these degrees.

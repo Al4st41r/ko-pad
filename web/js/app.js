@@ -2,7 +2,7 @@
 import { PPQ, GROUPS, PAD_LABELS, GRIDS, STEP_PAGE_BARS, PROJECT_COUNT, PATTERNS_PER_GROUP, MAX_BARS, NOTE_NAMES, EFFECTS, USER_SAMPLE_MIN } from './data.js';
 import { factoryProject, normaliseProject, getPattern, setBars, setBeats, beatsOf, clearPad, nextEmptyPattern, doubleLength, halveLength, correctEvents, clearPattern, padSemitone, scaleNote, nudgeEvent, copyOf, pasteInto, patternTicks, nextFreeScene, sceneFromCurrent, UndoStack, ticksToPosition, toggleStep } from './model.js';
 import { Engine } from './audio.js';
-import { PARAMS, TIMING, nextTiming, nextSound, moveStep, stepText, stepValue } from './params.js';
+import { PARAMS, TIMING, INTERVALS, SWING_INTERVALS, intervalAt, intervalValue, nextTiming, nextSound, moveStep, stepText, stepValue } from './params.js';
 import { Sequencer } from './seq.js';
 import { storage, userSamples } from './store.js';
 import { TABS, renderTab, storeBuffer, knob, fader } from './panels.js';
@@ -187,11 +187,12 @@ A.refreshModes = () => {
   for (const [i, id] of ['#pmDn', '#pmUp'].entries()) {
     const el = $(id); if (A.shift && act.shift) tagShift(el, act.shift[i]); else delete el.dataset.shift;
   }
+  A.refreshDials?.();
   $('#bpmVal').classList.toggle('sel', A.param === 'bpm');
   $('#bpmVal').textContent = Math.round(A.project.bpm);
   const set = (id, on) => { const b = $(id); b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); };
   set('#btnShift', A.shift); set('#sideShift', A.shift); set('#btnKeys', A.keys); set('#sideKeys', A.keys); set('#btnMetro', A.seq.metronome); set('#btnErase', A.erase);
-  set('#btnRepeat', !!A.repeat); set('#btnSoloG', A.soloG === A.g); set('#btnSoloP', !!A.soloP && A.soloP.g === A.g && A.soloP.p === A.sel); set('#btnOver', !!A.overwrite); set('#btnSample', !!A.sampleMode);
+  set('#btnRepeat', !!A.repeat); set('#btnLiveCorr', !!A.liveCorr); set('#btnSoloG', A.soloG === A.g); set('#btnSoloP', !!A.soloP && A.soloP.g === A.g && A.soloP.p === A.sel); set('#btnOver', !!A.overwrite); set('#btnSample', !!A.sampleMode);
   $('#btnPlay').classList.toggle('on', A.seq.playing); $('#btnRec').classList.toggle('on', A.seq.recording || (!!A.stepRec && !A.seq.playing));
 };
 
@@ -211,6 +212,11 @@ A.refresh = () => {
 // Dials above the pads (HARDWARE layout) drive the X and Y of the active effect.
 const FX_KEYS = ['none', ...Object.keys(EFFECTS)];
 const dial = (name, i) => knob('', name, 0.5, (v) => {
+  if (A.param === 'interval') {
+    if (i === 0) { setInterval_(intervalAt(v)); dials[0].setValue(v, A.settings.interval); }
+    else if (SWING_INTERVALS.includes(A.settings.interval)) { A.project.swing = v; $('#swing').value = Math.round(v * 100); A.save(); dials[1].setValue(v, `${Math.round(v * 100)}%`); }
+    return;
+  }
   const fx = A.project.fx, p = fx.params[fx.active];
   if (!p) return;
   p[i] = v; A.applyFx(); A.save();
@@ -223,6 +229,15 @@ $('#fxCycle').addEventListener('click', () => {
   A.applyFx(); A.save(); A.refreshDials(); A.renderPanel();
 });
 A.refreshDials = () => {
+  if (A.param === 'interval') {
+    const sw = SWING_INTERVALS.includes(A.settings.interval);
+    dials[0].setValue(intervalValue(A.settings.interval), A.settings.interval);
+    dials[1].setValue(A.project.swing, sw ? `${Math.round(A.project.swing * 100)}%` : 'SWING n/a');
+    dials[0].classList.remove('off'); dials[1].classList.toggle('off', !sw);
+    $('#fxCycle').textContent = 'FX OFF'; $('#fxCycle').classList.remove('on');
+    const def0 = EFFECTS[A.project.fx.active]; if (def0) { $('#fxCycle').textContent = def0.label; $('#fxCycle').classList.add('on'); }
+    return;
+  }
   const fx = A.project.fx, def = EFFECTS[fx.active], p = fx.params[fx.active];
   dials[0].setValue(p ? p[0] : 0.5, def ? def.x : '');
   dials[1].setValue(p ? p[1] : 0.5, def ? def.y : '');
@@ -332,8 +347,10 @@ padsEl.addEventListener('pointerdown', (e) => {
   const latch = !!(A.repeat && A.shift);
   down.set(e.pointerId, { el, g: A.g, padIdx, repeat: A.repeat, latch, pad: i });
   if (latch) { A.latched.set(lkey, padIdx); el.classList.add('rep'); }
+  // Live timing correct: with CORRECT held while playing, a pad press snaps that pad's existing hits to the TIMING interval.
+  if (A.liveCorr && A.seq.playing && !A.keys) correct(padIdx);
   if (A.repeat) A.seq.startRepeat(A.g, padIdx, vel, semis);
-  else A.seq.padDown(A.g, padIdx, vel, semis);
+  else { A.seq.suppressRec = !!A.liveCorr; A.seq.padDown(A.g, padIdx, vel, semis); A.seq.suppressRec = false; }
   if (A.stepRec && !A.seq.playing && !A.keys && !A.repeat) stepEnter(padIdx, vel);
   if (A.panelDirty && A.tab === 'STEP') { A.panelDirty = false; A.renderPanel(); }
 });
@@ -405,7 +422,7 @@ function soundKey(i) {
 }
 // STEP: a cursor in TIMING-interval steps. While stopped with step recording latched (SHIFT + REC), -/+ moves it and a pad press writes a hit and moves on.
 // The step size is the TIMING interval (OFF falls back to sixteenths).
-const stepTicks = () => GRIDS[A.seq.quantise] || PPQ / 4;
+const stepTicks = () => GRIDS[A.settings.interval] || PPQ / 4;
 A.stepTicks = stepTicks;
 const stepping = () => !A.seq.playing && (A.param === 'step' || A.stepRec);
 const stepBeats = () => { const p = getPattern(A.project, A.g); return p ? beatsOf(p) : 4; };
@@ -422,6 +439,14 @@ function stepEnter(padIdx, vel) {
   A.save(); moveCursor(1);
 }
 
+// TIMING: interval (knob X), swing (knob Y), quantise or free time (-/+). Free time records at the exact tick.
+function applyTiming() {
+  A.seq.quantise = A.settings.free ? 'off' : A.settings.interval;
+  A.settings.quantise = A.seq.quantise; A.saveSettings();
+  const sel = $('#timingSel'); if (sel) sel.value = A.seq.quantise;
+}
+function setInterval_(name) { if (!GRIDS[name] || name === A.settings.interval) return; A.settings.interval = name; applyTiming(); A.refreshModes(); A.renderPanel(); }
+function setFree(free) { A.settings.free = free; applyTiming(); A.refreshModes(); }
 // One -/+ pair for every value, like the device: the selector button picks the target.
 // SHIFT + PATTERN -/+ moves between bars or nudges a held pad; SHIFT + BARS -/+ halves or doubles the pattern.
 const PARAM_ACTIONS = {
@@ -429,6 +454,7 @@ const PARAM_ACTIONS = {
   bars: { get: () => getPattern(A.project, A.g)?.bars ?? 1, step: (d) => (A.shift ? $(d < 0 ? '#btnHalf' : '#btnX2').click() : bars(d)), shift: ['HALF', 'x2'] },
   bpm: { get: () => Math.round(A.project.bpm), step: (d) => setBpm(A.project.bpm + d) },
   beats: { get: () => { const p = getPattern(A.project, A.g); return p ? beatsOf(p) : 4; }, step: beats },
+  interval: { get: () => `${A.settings.interval} ${A.settings.free ? 'FREE' : 'QUANT'}`, step: (d) => setFree(d > 0), shift: ['QUANTISE', 'FREE'] },
   octave: { get: () => A.oct, step: (d) => { A.oct = stepValue('octave', A.oct, d); A.refresh(); } },
   sound: { get: () => (typing() ? `${A.soundDigits}_` : soundPad().s ? `${soundPad().s} ${A.sampleName(soundPad().s)}` : '--'), step: stepSound },
   step: { get: () => stepText(A.stepCur, stepBeats()), step: (d) => moveCursor(d) },
@@ -467,6 +493,7 @@ const hold = (id, key) => {
   for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) b.addEventListener(ev, () => { A[key] = false; A.refreshModes(); });
 };
 hold('#btnRepeat', 'repeat');
+hold('#btnLiveCorr', 'liveCorr');
 // While SHIFT is down each control it changes shows what it will do (see html.shift [data-shift] in style.css).
 const SHIFT_LABELS = {
   '#btnErase': 'PROJECT', '#btnSample': 'CHOP',
@@ -523,10 +550,10 @@ bind('#btnNextEmpty', () => {
 bind('#btnX2', () => { if (!edit((p) => doubleLength(p))) A.toast(`Patterns can be up to ${MAX_BARS} bars`); });
 bind('#btnHalf', () => { if (!edit((p) => halveLength(p))) A.toast('Already one bar'); });
 const correct = (pad) => {
-  if (!GRIDS[A.seq.quantise]) return A.toast('Set TIMING to a grid first');
+  const grid = A.settings.interval;
   const pat = A.pattern(); if (!pat) return A.toast('This pattern is empty');
-  const n = edit((p) => correctEvents(p, A.seq.quantise, pad));
-  A.toast(n ? `Corrected ${n} hit${n > 1 ? 's' : ''} to ${A.seq.quantise}` : 'Nothing to correct');
+  const n = edit((p) => correctEvents(p, grid, pad));
+  A.toast(n ? `Corrected ${n} hit${n > 1 ? 's' : ''} to ${grid}` : 'Nothing to correct');
 };
 bind('#btnCorrPad', () => correct(A.sel));
 bind('#btnCorrAll', () => correct(null));
@@ -549,7 +576,10 @@ for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) erase.addEventL
 $('#timingSel').innerHTML = ['off', ...Object.keys(GRIDS)].map((k) => `<option value="${k}">${k === 'off' ? 'OFF' : k}</option>`).join('');
 // SHIFT + TIMING opens timing correct (here: correct every note to the current grid).
 $('#timingSel').addEventListener('pointerdown', (e) => { if (A.shift) { e.preventDefault(); correct(null); } });
-$('#timingSel').addEventListener('change', (e) => { A.seq.quantise = e.target.value; A.settings.quantise = e.target.value; A.saveSettings(); });
+$('#timingSel').addEventListener('change', (e) => {
+  if (e.target.value === 'off') A.settings.free = true; else { A.settings.free = false; A.settings.interval = e.target.value; }
+  applyTiming(); A.refreshModes(); A.renderPanel();
+});
 
 bind('#btnPlay', async () => {
   await A.engine.start();
@@ -697,6 +727,8 @@ function audioSession() {
 async function boot() {
   A.applyLook();
   A.seq.metronome = A.settings.metronome; A.seq.countIn = A.settings.countIn; A.seq.quantise = A.settings.quantise;
+  if (!GRIDS[A.settings.interval]) A.settings.interval = GRIDS[A.settings.quantise] ? A.settings.quantise : '1/16';
+  A.settings.free = A.settings.quantise === 'off' ? true : !!A.settings.free && A.settings.quantise === 'off';
   $('#timingSel').value = A.settings.quantise;
   // The catalogue lists the sounds in samples/. It is optional: without it the app runs on imported and recorded sounds only.
   try {

@@ -234,7 +234,7 @@ export class Sequencer {
     const pad = this.project.groups[g].pads[p];
     let voice = null;
     const entry = { voice: null, ev: null, startTick: 0, pat: null };
-    if (this.playing && this.recording) {
+    if (this.playing && this.recording && !this.suppressRec) {
       const pos = this.position();
       if (pos !== null && pos >= 0) {
         const pat = getPattern(this.project, g, this._numFor(g) || this.project.groups[g].cur, true);

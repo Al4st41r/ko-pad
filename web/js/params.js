@@ -7,6 +7,7 @@ export const PARAMS = [
   { id: 'bpm', label: 'BPM', min: 40, max: 300 },
   { id: 'beats', label: 'BEATS /4', min: 1, max: 12 },
   { id: 'octave', label: 'OCTAVE', min: -3, max: 3 },
+  { id: 'interval', label: 'INTERVAL', min: 0, max: 0 },
 ];
 
 // Next (dir 1) or previous (dir -1) parameter id, wrapping at the ends.
@@ -26,8 +27,15 @@ export function stepValue(id, value, dir) {
 }
 
 // The TIMING button on the device cycles through the timing values.
-export const TIMING = ['bpm', 'bars', 'beats', 'octave'];
+// INTERVAL comes first: knob X sets the note interval, knob Y the swing, minus is quantise and plus is free time.
+export const TIMING = ['interval', 'bpm', 'bars', 'beats', 'octave'];
 export const nextTiming = (id) => TIMING[(TIMING.indexOf(id) + 1) % TIMING.length];
+
+// Note intervals in knob order (knob X). Swing applies to the straight eighths and sixteenths only.
+export const INTERVALS = ['1/1', '1/2', '1/4', '1/8', '1/8T', '1/16', '1/16T', '1/32'];
+export const SWING_INTERVALS = ['1/8', '1/16'];
+export const intervalAt = (v) => INTERVALS[Math.min(INTERVALS.length - 1, Math.max(0, Math.round(v * (INTERVALS.length - 1))))];
+export const intervalValue = (name) => Math.max(0, INTERVALS.indexOf(name)) / (INTERVALS.length - 1);
 
 // The sound after (dir 1) or before (dir -1) the current one in a list of sound numbers, wrapping.
 // An empty pad (or a sound no longer in the list) starts at the first sound going up, the last going down.

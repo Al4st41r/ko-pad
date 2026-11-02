@@ -275,3 +275,5 @@ Each pad has a dot. A ring means the pad has notes in the pattern. While playing
 ## Licence
 
 The code is released under the [MIT licence](LICENSE). The licence covers the code only. It does not cover any sounds you add, which stay under their own terms.
+
+- TIMING is a mode: select TIMING, then knob X sets the note interval (1/1 to 1/32, including triplets), knob Y sets swing (eighths and sixteenths only), minus records quantised and plus records in free time. LIVE (hold) in the timing tools, pressed while playing, snaps the hits of any pad you then press to the interval. Note repeat stays its own button.

@@ -31,10 +31,10 @@ test('the page has one -/+ pair for pattern, bars, tempo, beats and octave', () 
 });
 
 test('TIMING cycles tempo, bars, beats, octave and wraps', () => {
-  assert.deepEqual(TIMING, ['bpm', 'bars', 'beats', 'octave']);
+  assert.deepEqual(TIMING, ['interval', 'bpm', 'bars', 'beats', 'octave']);
   assert.equal(nextTiming('bpm'), 'bars');
-  assert.equal(nextTiming('octave'), 'bpm');
-  assert.equal(nextTiming('pattern'), 'bpm');
+  assert.equal(nextTiming('octave'), 'interval');
+  assert.equal(nextTiming('pattern'), 'interval');
 });
 
 test('SOUND steps through the sound list and wraps', () => {
@@ -56,4 +56,12 @@ test('STEP cursor wraps inside the pattern and reads as bar.beat.step', () => {
   assert.equal(stepText(5), '1.2.2');
   assert.equal(stepText(16), '2.1.1');
   assert.equal(stepText(15, 3), '2.1.4', '3/4 has 12 steps a bar');
+});
+
+test('TIMING interval knob maps across the eight intervals', async () => {
+  const { INTERVALS, intervalAt, intervalValue } = await import('../web/js/params.js');
+  assert.equal(INTERVALS.length, 8);
+  assert.equal(intervalAt(0), '1/1');
+  assert.equal(intervalAt(1), '1/32');
+  for (const n of INTERVALS) assert.equal(intervalAt(intervalValue(n)), n);
 });
