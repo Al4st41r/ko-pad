@@ -354,7 +354,7 @@ padsEl.addEventListener('pointerdown', (e) => {
   if (A.liveCorr && A.seq.playing && !A.keys) correct(padIdx);
   if (A.repeat) A.seq.startRepeat(A.g, padIdx, vel, semis);
   else { A.seq.suppressRec = !!A.liveCorr; A.seq.padDown(A.g, padIdx, vel, semis); A.seq.suppressRec = false; }
-  if (A.stepRec && !A.seq.playing && !A.keys && !A.repeat) stepEnter(padIdx, vel);
+  if ((A.stepRec || A.param === 'step') && !A.seq.playing && !A.keys && !A.repeat) stepEnter(padIdx, vel);
   if (A.panelDirty && A.tab === 'STEP') { A.panelDirty = false; A.renderPanel(); }
 });
 const release = (e) => {
@@ -607,7 +607,7 @@ bind('#btnPlay', async () => {
 bind('#btnStop', () => { A.seq.stop(); wakeLock(false); A.refreshModes(); });
 bind('#btnRec', async () => {
   // SHIFT + REC while stopped latches step recording: pads write to the step cursor instead of only playing.
-  if (A.shift && !A.seq.playing) { A.stepRec = !A.stepRec; A.toast(A.stepRec ? 'Step record on: pads write, -/+ move the step' : 'Step record off'); return A.refreshModes(); }
+  if (A.shift && !A.seq.playing) { A.stepRec = !A.stepRec; A.toast(A.stepRec ? 'Step record on: pads write, -/+ move the step (also on while STEP is selected)' : 'Step record off'); return A.refreshModes(); }
   await A.engine.start();
   if (!A.seq.playing) {
     if (A.overwrite) {
