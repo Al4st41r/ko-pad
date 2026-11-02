@@ -192,7 +192,7 @@ A.refreshModes = () => {
   const set = (id, on) => { const b = $(id); b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); };
   set('#btnShift', A.shift); set('#sideShift', A.shift); set('#btnKeys', A.keys); set('#sideKeys', A.keys); set('#btnMetro', A.seq.metronome); set('#btnErase', A.erase);
   set('#btnRepeat', !!A.repeat); set('#btnSoloG', A.soloG === A.g); set('#btnSoloP', !!A.soloP && A.soloP.g === A.g && A.soloP.p === A.sel); set('#btnOver', !!A.overwrite); set('#btnSample', !!A.sampleMode);
-  $('#btnPlay').classList.toggle('on', A.seq.playing); $('#btnRec').classList.toggle('on', A.seq.recording);
+  $('#btnPlay').classList.toggle('on', A.seq.playing); $('#btnRec').classList.toggle('on', A.seq.recording || (!!A.stepRec && !A.seq.playing));
 };
 
 const patName = () => `${GROUPS[A.g]}${String(A.grp().cur).padStart(2, '0')}`;  // group letter and pattern number, e.g. A01, B03
@@ -334,7 +334,7 @@ padsEl.addEventListener('pointerdown', (e) => {
   if (latch) { A.latched.set(lkey, padIdx); el.classList.add('rep'); }
   if (A.repeat) A.seq.startRepeat(A.g, padIdx, vel, semis);
   else A.seq.padDown(A.g, padIdx, vel, semis);
-  if (A.param === 'step' && !A.seq.playing && !A.keys && !A.repeat) stepEnter(padIdx, vel);
+  if (A.stepRec && !A.seq.playing && !A.keys && !A.repeat) stepEnter(padIdx, vel);
   if (A.panelDirty && A.tab === 'STEP') { A.panelDirty = false; A.renderPanel(); }
 });
 const release = (e) => {
@@ -403,19 +403,22 @@ function soundKey(i) {
   else if (key === 'ENT') return applySoundNumber();
   A.refreshModes();
 }
-// STEP: a cursor in sixteenth notes. -/+ moves it through the pattern; while stopped, a pad press puts a hit at the cursor and moves on.
-const STEP_TICKS = PPQ / 4;
+// STEP: a cursor in TIMING-interval steps. While stopped with step recording latched (SHIFT + REC), -/+ moves it and a pad press writes a hit and moves on.
+// The step size is the TIMING interval (OFF falls back to sixteenths).
+const stepTicks = () => GRIDS[A.seq.quantise] || PPQ / 4;
+A.stepTicks = stepTicks;
+const stepping = () => !A.seq.playing && (A.param === 'step' || A.stepRec);
 const stepBeats = () => { const p = getPattern(A.project, A.g); return p ? beatsOf(p) : 4; };
-const stepTotal = () => { const p = getPattern(A.project, A.g); return Math.max(1, Math.round((p ? patternTicks(p) : PPQ * 4) / STEP_TICKS)); };
-A.stepCur = 0;
+const stepTotal = () => { const p = getPattern(A.project, A.g); return Math.max(1, Math.round((p ? patternTicks(p) : PPQ * 4) / stepTicks())); };
+A.stepCur = 0; A.stepRec = false;
 function moveCursor(d) {
   A.stepCur = moveStep(Math.min(A.stepCur, stepTotal() - 1), d, stepTotal());
-  if (A.tab === 'STEP') { A.stepPage = Math.floor((A.stepCur * STEP_TICKS) / (STEP_PAGE_BARS * stepBeats() * PPQ)); A.stepFollow = false; }
+  if (A.tab === 'STEP') { A.stepPage = Math.floor((A.stepCur * stepTicks()) / (STEP_PAGE_BARS * stepBeats() * PPQ)); A.stepFollow = false; }
   A.refreshModes(); A.renderPanel();
 }
 function stepEnter(padIdx, vel) {
   const pat = A.pattern(true); A.beforeEdit(A.g, pat);
-  toggleStep(pat, Math.min(A.stepCur, stepTotal() - 1) * STEP_TICKS, padIdx, STEP_TICKS, Math.round(vel));
+  toggleStep(pat, Math.min(A.stepCur, stepTotal() - 1) * stepTicks(), padIdx, stepTicks(), Math.round(vel));
   A.save(); moveCursor(1);
 }
 
@@ -451,8 +454,10 @@ soundBtn.addEventListener('pointerup', soundRelease);
 soundBtn.addEventListener('pointercancel', soundRelease);
 // TIMING cycles tempo, bars, beats and octave, as the device's TIMING button does; the first press goes to tempo.
 bind('#pmTiming', () => selectParam(TIMING.includes(A.param) ? nextTiming(A.param) : TIMING[0]));
-bind('#pmDn', () => PARAM_ACTIONS[A.param].step(-1));
-bind('#pmUp', () => PARAM_ACTIONS[A.param].step(1));
+// With step recording latched and the sequencer stopped, -/+ walk the steps whichever value is selected.
+const pmStep = (d) => (A.stepRec && !A.seq.playing && !A.shift ? moveCursor(d) : PARAM_ACTIONS[A.param].step(d));
+bind('#pmDn', () => pmStep(-1));
+bind('#pmUp', () => pmStep(1));
 bind('#btnKeys', () => { A.keys = !A.keys; if (A.keys) A.keysPad = A.sel; A.refresh(); });
 bind('#btnUndo', () => A.undoLast());
 bind('#btnMetro', () => { A.seq.metronome = !A.seq.metronome; A.settings.metronome = A.seq.metronome; A.saveSettings(); A.refreshModes(); });
@@ -555,6 +560,8 @@ bind('#btnPlay', async () => {
 });
 bind('#btnStop', () => { A.seq.stop(); wakeLock(false); A.refreshModes(); });
 bind('#btnRec', async () => {
+  // SHIFT + REC while stopped latches step recording: pads write to the step cursor instead of only playing.
+  if (A.shift && !A.seq.playing) { A.stepRec = !A.stepRec; A.toast(A.stepRec ? 'Step record on: pads write, -/+ move the step' : 'Step record off'); return A.refreshModes(); }
   await A.engine.start();
   if (!A.seq.playing) {
     if (A.overwrite) {
@@ -636,9 +643,9 @@ function updateLeds(pos) {
     if (playing) {
       const base = A.seq.songMode ? pos - A.seq.sceneStart : pos;
       from = Math.floor((base % patternTicks(pat)) / grid) * grid; to = from + grid;
-    } else if (A.param === 'step' && !A.seq.playing) {
+    } else if (stepping()) {
       // Stepping with STEP selected: the dot shows the pads that have a hit on the cursor's step.
-      from = Math.min(A.stepCur, stepTotal() - 1) * STEP_TICKS; to = from + STEP_TICKS;
+      from = Math.min(A.stepCur, stepTotal() - 1) * stepTicks(); to = from + stepTicks();
     }
     for (const ev of pat.ev) { has.add(ev.p); if (ev.t >= from && ev.t < to) hit.add(ev.p); }
   }
@@ -656,7 +663,7 @@ const lcdPos = $('#lcdPos'), meterEl = $('#meter');
 function frame() {
   const pos = A.seq.position();
   const el = lcdPos;
-  if (pos === null) el.textContent = A.param === 'step' ? stepText(Math.min(A.stepCur, stepTotal() - 1), stepBeats()) : '--.-.-';
+  if (pos === null) el.textContent = stepping() ? stepText(Math.floor(Math.min(A.stepCur, stepTotal() - 1) * stepTicks() / (PPQ / 4)), stepBeats()) : '--.-.-';
   else if (pos < 0) el.textContent = 'COUNT';
   else { const p = ticksToPosition(Math.floor(A.seq.displayTick(pos)), A.seq.countLen); el.textContent = `${String(p.bar).padStart(2, '0')}.${p.beat}.${p.sixteenth}`; }
   updateLeds(pos);

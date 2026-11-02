@@ -77,7 +77,7 @@ function stepTab(A, body) {
       if (Math.floor(tick / 96) % 2) cls.push('alt');
       const v = on.get(`${r}:${c}`);
       if (v !== undefined) cls.push('on');
-      if (A.param === 'step' && A.stepCur * 24 >= tick && A.stepCur * 24 < endT) cls.push('cur');
+      if ((A.param === 'step' || A.stepRec) && A.stepCur * A.stepTicks() >= tick && A.stepCur * A.stepTicks() < endT) cls.push('cur');
       if (A.selEv && A.selEv.ev.p === r && Math.floor(A.selEv.ev.t / grid) === c) cls.push('sel');
       const d = document.createElement('div');
       d.className = cls.join(' '); d.dataset.r = r; d.dataset.c = c;
