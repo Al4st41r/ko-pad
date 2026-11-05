@@ -15,8 +15,10 @@ export const storage = {
 class UserSamples {
   constructor() { this.db = null; this.meta = new Map(); }
 
-  async open() {
-    if (this.db) return;
+  // One shared open, so concurrent callers cannot each re-read the store and reset the slot map.
+  open() { return (this._opening ??= this._open().catch((err) => { this._opening = null; throw err; })); }
+
+  async _open() {
     this.db = await new Promise((res, rej) => {
       const r = indexedDB.open('ko-samples', 1);
       r.onupgradeneeded = () => r.result.createObjectStore('s', { keyPath: 'id' });
@@ -44,8 +46,14 @@ class UserSamples {
     await this.open();
     const id = this.nextFreeId();
     if (id === null) throw new Error('All 400 user sample slots are in use');
-    await this._req(this._tx('readwrite').put({ id, name, data, dur }));
+    // Reserve the slot before the asynchronous write so a concurrent put() cannot be given the same id.
     this.meta.set(id, { id, name, dur });
+    try {
+      await this._req(this._tx('readwrite').put({ id, name, data, dur }));
+    } catch (err) {
+      this.meta.delete(id);
+      throw err;
+    }
     return id;
   }
 
