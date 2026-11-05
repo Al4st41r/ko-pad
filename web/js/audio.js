@@ -327,6 +327,7 @@ export class Engine {
     const s = this.ctx.createBufferSource(); s.buffer = buf;
     const g = this.ctx.createGain(); g.gain.value = (vel / 127) ** 1.2;
     s.connect(g); g.connect(this.master); s.start();
+    s.onended = () => { s.disconnect(); g.disconnect(); if (this._pv === s) this._pv = null; };
     this._pv = s;
   }
 
@@ -431,6 +432,7 @@ export class Engine {
         break;
       case 6: case 7: {
         if (on) {
+          if (this._stut) { try { this._stut.lfo.stop(t); } catch { /* ended */ } this._stut.amp.disconnect(); this._stut = null; }
           const hz = (this.bpm / 60) * (i === 6 ? 2 : 4);   // one gate cycle per note value
           const lfo = c.createOscillator(); lfo.type = 'square'; lfo.frequency.value = hz;
           const amp = c.createGain(); amp.gain.value = 0.5;

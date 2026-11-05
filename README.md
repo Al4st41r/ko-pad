@@ -191,6 +191,7 @@ The HARDWARE layout (the default) works on a phone in portrait. On a phone held 
 - The top bar keeps stop, play, record and tempo. The ... button shows the project selector, METRO, TAP tempo, swing and the offline status.
 - Under the pads: the selector with - and +, KEYS, NOTE REPEAT, ERASE and UNDO. TOOLS opens a sheet with timing, SAMPLE, COMMIT, pattern tools, timing correct, solo and overwrite. Tap anywhere outside the sheet to close it.
 - In landscape the pads are on the left and the controls on the right.
+- Playing along to music: start the music in Spotify, Apple Music or similar, then open KO Pad. By default KO Pad plays alongside other apps (PROJECT tab, MUSIC FROM OTHER APPS). In this mode the silent switch mutes KO Pad, and recording from the microphone may pause the music while it records. Set PAUSE IT to make KO Pad take over the audio instead. Needs iOS 16.4 or later.
 
 ## Install on the iPad and prepare for a flight
 

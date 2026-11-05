@@ -16,7 +16,7 @@ export const A = window.A = {
   catalogue: [], byId: new Map(), undo: new UndoStack(), lastUndoPush: 0,
 };
 
-A.settings = Object.assign({ pi: 1, quantise: '1/16', metronome: false, countIn: true, velMode: 'fixed', master: 0.9, scale: 'chromatic', theme: 'light', layout: 'hardware' }, storage.get('ko.settings', {}));
+A.settings = Object.assign({ pi: 1, quantise: '1/16', metronome: false, countIn: true, mixMusic: true, velMode: 'fixed', master: 0.9, scale: 'chromatic', theme: 'light', layout: 'hardware' }, storage.get('ko.settings', {}));
 
 // ---- helpers -------------------------------------------------------------------
 A.toast = (msg, ms = 2200) => {
@@ -94,6 +94,7 @@ A.preload = async (project = A.project) => {
 
 // ---- project load/switch -------------------------------------------------------
 A.loadProject = async (n) => {
+  if (A.sampleMode) setSampleMode(false);
   if (A.project) { A.seq.stop(); storage.set(`ko.proj.${A.pi}`, A.project); }
   A.pi = n; A.settings.pi = n; A.saveSettings();
   const raw = storage.get(`ko.proj.${n}`);
@@ -274,6 +275,8 @@ const keyNote = (i) => scaleNote(padSemitone(i), A.settings.scale) + 12 * A.oct;
 
 // SAMPLE mode: empty pads flash. Hold one to record from the microphone, release to stop.
 let micStream = null;
+// 'ambient' lets music from other apps keep playing underneath; 'playback' takes over the audio route and pauses it.
+A.idleSession = () => (A.settings.mixMusic ? 'ambient' : 'playback');
 const audioSessionType = (t) => { try { if (navigator.audioSession) navigator.audioSession.type = t; } catch { /* unsupported */ } };
 async function setSampleMode(on) {
   if (on) {
@@ -284,12 +287,12 @@ async function setSampleMode(on) {
       A.sampleMode = true;
       A.toast('Sample mode: hold an empty pad to record');
     } catch (err) {
-      A.sampleMode = false; audioSessionType('playback');
+      A.sampleMode = false; audioSessionType(A.idleSession());
       A.toast(err.name === 'NotAllowedError' ? 'Microphone permission was declined' : `Microphone unavailable: ${err.message}`);
     }
   } else {
     micStream?.getTracks().forEach((t) => t.stop()); micStream = null;
-    audioSessionType('playback'); A.sampleMode = false;
+    audioSessionType(A.idleSession()); A.sampleMode = false;
   }
   A.refreshPads(); A.refreshModes();
 }
@@ -708,10 +711,11 @@ function updateLeds(pos) {
 const lcdPos = $('#lcdPos'), meterEl = $('#meter');
 function frame() {
   const pos = A.seq.position();
-  const el = lcdPos;
-  if (pos === null) el.textContent = stepping() ? stepText(Math.floor(Math.min(A.stepCur, stepTotal() - 1) * stepTicks() / (PPQ / 4)), stepBeats()) : '--.-.-';
-  else if (pos < 0) el.textContent = 'COUNT';
-  else { const p = ticksToPosition(Math.floor(A.seq.displayTick(pos)), A.seq.countLen); el.textContent = `${String(p.bar).padStart(2, '0')}.${p.beat}.${p.sixteenth}`; }
+  let txt;
+  if (pos === null) txt = stepping() ? stepText(Math.floor(Math.min(A.stepCur, stepTotal() - 1) * stepTicks() / (PPQ / 4)), stepBeats()) : '--.-.-';
+  else if (pos < 0) txt = 'COUNT';
+  else { const p = ticksToPosition(Math.floor(A.seq.displayTick(pos)), A.seq.countLen); txt = `${String(p.bar).padStart(2, '0')}.${p.beat}.${p.sixteenth}`; }
+  if (lcdPos.textContent !== txt) lcdPos.textContent = txt;
   updateLeds(pos);
   meterEl.style.width = `${Math.min(100, A.engine.level() * 100)}%`;
   A.onFrame?.(pos);
@@ -723,6 +727,8 @@ function frame() {
 // Screen wake lock while playing (helps on long flights).
 let lock = null, wantLock = false;
 document.addEventListener('visibilitychange', () => {
+  // Release the microphone when the page is hidden.
+  if (document.hidden && A.sampleMode) setSampleMode(false);
   // The system drops the lock when the page is hidden; take it again on return.
   if (document.visibilityState === 'visible' && wantLock && A.seq.playing) wakeLock(true);
 });
@@ -736,7 +742,7 @@ async function wakeLock(on) {
 
 // iOS: route Web Audio to the media channel so the silent switch does not mute it.
 function audioSession() {
-  try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch { /* unsupported */ }
+  try { if (navigator.audioSession) navigator.audioSession.type = A.idleSession(); } catch { /* unsupported */ }
 }
 
 // ---- boot ----------------------------------------------------------------------

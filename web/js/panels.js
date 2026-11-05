@@ -62,7 +62,7 @@ function stepTab(A, body) {
 
   const wrap = h('<div class="stepwrap"></div>');
   const steps = h('<div class="steps"></div>');
-  steps.style.gridTemplateColumns = `104px repeat(${c1 - c0}, minmax(${grid <= 16 ? 18 : 24}px, 1fr))`;
+  steps.style.gridTemplateColumns = `${document.documentElement.classList.contains('compact') ? 84 : 104}px repeat(${c1 - c0}, minmax(${grid <= 16 ? 24 : 28}px, 1fr))`;
   const on = new Map();
   if (pat) for (const e of pat.ev) on.set(`${e.p}:${Math.floor(e.t / grid)}`, e.v);
   const frag = document.createDocumentFragment();
@@ -391,7 +391,7 @@ export async function storeBuffer(A, buf, name, trim = false) {
 function micRecorder(A, btn, assign) {
   let mr = null, stream = null, timer = null;
   const setSession = (t) => { try { if (navigator.audioSession) navigator.audioSession.type = t; } catch { /* unsupported */ } };
-  const finish = () => { clearTimeout(timer); stream?.getTracks().forEach((t) => t.stop()); setSession('playback'); btn.innerHTML = '&#9679; RECORD MIC'; btn.classList.remove('rec', 'on'); mr = null; };
+  const finish = () => { clearTimeout(timer); stream?.getTracks().forEach((t) => t.stop()); setSession(A.idleSession()); btn.innerHTML = '&#9679; RECORD MIC'; btn.classList.remove('rec', 'on'); mr = null; };
   btn.onclick = async () => {
     if (mr) { mr.stop(); return; }
     try {
@@ -427,6 +427,7 @@ function drawWave(A, cv, pad) {
   const css = getComputedStyle(document.documentElement);
   g.fillStyle = css.getPropertyValue('--well'); g.fillRect(0, 0, w, hh);
   const buf = A.engine.buffers.get(pad.s);
+  if (!buf && pad.s && A.engine.ctx) A.engine.load(pad.s).then(() => { if (cv.isConnected) drawWave(A, cv, pad); }).catch(() => {});
   if (!buf) { g.fillStyle = css.getPropertyValue('--dim'); g.font = '12px system-ui'; g.fillText(pad.s ? 'Loading sample' : 'No sample on this pad', 12, 24); return; }
   const d = buf.getChannelData(0), per = d.length / w;
   g.fillStyle = css.getPropertyValue('--accent');
@@ -667,6 +668,7 @@ function projectTab(A, body) {
   body.append(h('<h3>PLAYING</h3>'));
   seg('PAD VELOCITY', [['fixed', 'FIXED'], ['position', 'TOUCH POSITION']], A.settings.velMode, (v) => { A.settings.velMode = v; A.saveSettings(); });
   seg('KEYS SCALE', Object.keys(SCALES).map((k) => [k, k.toUpperCase()]), A.settings.scale, (v) => { A.settings.scale = v; A.saveSettings(); A.refreshPads(); });
+  seg('MUSIC FROM OTHER APPS', [[true, 'PLAY ALONGSIDE'], [false, 'PAUSE IT']], A.settings.mixMusic, (v) => { A.settings.mixMusic = v === 'true'; A.saveSettings(); try { if (navigator.audioSession) navigator.audioSession.type = A.idleSession(); } catch { /* unsupported */ } });
   seg('COUNT-IN', [[true, 'ON'], [false, 'OFF']], A.settings.countIn, (v) => { A.settings.countIn = v === 'true'; A.seq.countIn = A.settings.countIn; A.saveSettings(); });
   body.append(h('<p class="note">Touch position: tapping the lower part of a pad plays harder. An iPad has no pressure-sensitive pads.</p>'));
 
@@ -681,9 +683,11 @@ function projectTab(A, body) {
   bk.querySelector('#im').onclick = () => bk.querySelector('#f').click();
   bk.querySelector('#f').onchange = async (e) => {
     try {
-      const f = e.target.files[0]; if (!f) return;
-      A.project = normaliseProject(JSON.parse(await f.text()));
-      A.save(); await A.preload(); A.refresh(); A.toast('Project imported');
+      const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+      const next = normaliseProject(JSON.parse(await f.text()));
+      // Load through the same path as a project switch so the sequencer, mix, FX and undo state are reset.
+      A.seq.stop(); A.project = next; storage.set(`ko.proj.${A.pi}`, next);
+      await A.loadProject(A.pi); A.toast('Project imported');
     } catch { A.toast('That file is not a KO Pad project'); }
   };
   bk.querySelector('#rs').onclick = () => { if (confirm(`Reset project ${A.pi} to ${A.pi <= 4 ? 'the factory banks' : 'empty'}? Patterns will be lost.`)) A.resetProject(); };

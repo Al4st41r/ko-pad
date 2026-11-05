@@ -157,12 +157,12 @@ input[type=text], input[type=number], input[type=search] { background: var(--rai
 .stepwrap { position: relative; overflow: auto; border: 1px solid var(--line); border-radius: var(--r-m); background: var(--well); }
 .steps { display: grid; position: relative; }
 .steprow { display: contents; }
-.steplab { position: sticky; left: 0; z-index: 2; background: var(--well2); border-right: 1px solid var(--line); padding: 0 8px; min-width: 96px; max-width: 120px; display: flex; flex-direction: column; justify-content: center; font-size: 11px; height: 34px; }
+.steplab { position: sticky; left: 0; z-index: 2; background: var(--well2); border-right: 1px solid var(--line); padding: 0 8px; width: 104px; box-sizing: border-box; border-bottom: 1px solid var(--grid); display: flex; flex-direction: column; justify-content: center; font-size: 11px; height: 34px; }
 .steplab b { font: 700 13px ui-monospace, Menlo, monospace; }
 .steplab span { color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .steplab.sel { box-shadow: inset 3px 0 0 var(--accent2); }
 .cell { }
-.sc { height: 34px; min-width: 22px; border-right: 1px solid var(--grid); border-bottom: 1px solid var(--grid); position: relative; touch-action: manipulation; }
+.sc { height: 34px; min-width: 0; box-sizing: border-box; border-right: 1px solid var(--grid); border-bottom: 1px solid var(--grid); position: relative; touch-action: manipulation; }
 .sc.beat { border-right-color: var(--grid-beat); }
 .sc.bar { border-right: 2px solid var(--grid-bar); }
 .sc.alt { background: var(--alt); }
@@ -272,8 +272,8 @@ html.compact #modesMore .cell .lab { min-width: 96px; }
 html.compact #modesMore .cell .btn { flex: 1 1 auto; }
 html.compact #modesMore .cell .val { min-width: 44px; }
 /* Panels */
-html.compact .sc { min-width: 28px; height: 40px; }
-html.compact .steplab { height: 40px; min-width: 64px; max-width: 84px; padding: 0 6px; }
+html.compact .sc { height: 40px; }
+html.compact .steplab { height: 40px; width: 84px; padding: 0 6px; }
 html.compact .mix { gap: 6px; }
 html.compact .fader { width: 52px; height: min(240px, 36dvh); }
 html.compact .chan input[type=range] { width: 60px !important; }
