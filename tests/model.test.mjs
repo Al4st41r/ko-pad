@@ -331,3 +331,16 @@ test('loopPosition wraps the counter at the pattern length', () => {
   assert.equal(M.ticksToPosition(M.loopPosition(bar * 4, bar * 2), bar).bar, 1);
   assert.equal(M.loopPosition(-96, bar), -96);                          // count-in is untouched
 });
+
+test('normaliseProject rejects odd scene and pattern keys, non-string names and unknown fields', () => {
+  const p = M.normaliseProject({
+    name: 123, extra: 'x', scenes: { '01': [1, 1, 1, 1], 0: [1, 1, 1, 1], 100: [1, 1, 1, 1], intro: [1, 1, 1, 1], 5: [1, 1, 1, 1] },
+    groups: [{ patterns: { '01': { bars: 1, ev: [] }, bad: { bars: 1, ev: [] }, 2: { bars: 1, ev: [] } } }],
+  });
+  assert.deepEqual(Object.keys(p.scenes), ['5']);
+  assert.deepEqual(Object.keys(p.groups[0].patterns), ['2']);
+  assert.equal(typeof p.name, 'string');
+  assert.equal(p.extra, undefined);
+  assert.equal(M.normaliseProject({ name: ['a'] }).name, 'EMPTY');
+  assert.equal(M.normaliseProject({ name: 'x'.repeat(40) }).name.length, 24);
+});

@@ -311,16 +311,20 @@ function cleanPattern(src) {
   return out;
 }
 
+// Pattern and scene keys must be canonical integer strings "1" to "99".
+const validKey = (k) => { const n = Number(k); return Number.isInteger(n) && n >= 1 && n <= 99 && String(n) === k; };
+
 export function normaliseProject(p) {
-  const base = newProject(p?.name || 'EMPTY');
-  const out = Object.assign(base, p || {});
+  const name = typeof p?.name === 'string' && p.name.trim() ? p.name.slice(0, 24) : 'EMPTY';
+  const out = newProject(name);
+  for (const k of ['bpm', 'swing', 'scenes', 'song']) if (p && k in p) out[k] = p[k];
   out.bpm = num(out.bpm, 40, 300, 120);
   out.swing = num(out.swing, 0, 1, 0);
   out.groups = GROUPS.map((_, i) => {
     const g = Object.assign(emptyGroup(), p?.groups?.[i] || {});
     g.pads = Array.from({ length: 12 }, (_, k) => cleanPad(g.pads?.[k]));
     const pats = {};
-    for (const [k, v] of Object.entries(g.patterns && typeof g.patterns === 'object' ? g.patterns : {})) pats[k] = cleanPattern(v);
+    for (const [k, v] of Object.entries(g.patterns && typeof g.patterns === 'object' ? g.patterns : {})) if (validKey(k)) pats[k] = cleanPattern(v);
     g.patterns = pats;
     g.cur = Math.round(num(g.cur, 1, MAX_PATTERN, 1)); g.mute = !!g.mute;
     g.vol = num(g.vol, 0, 1.5, 0.8); g.send = num(g.send, 0, 1, 1);
@@ -328,7 +332,7 @@ export function normaliseProject(p) {
   });
   const scenes = {};
   for (const [k, v] of Object.entries(out.scenes && typeof out.scenes === 'object' ? out.scenes : {})) {
-    if (Array.isArray(v) && v.length === GROUPS.length && v.every((n) => Number.isInteger(n) && n >= 0 && n <= MAX_PATTERN)) scenes[k] = [...v];
+    if (validKey(k) && Array.isArray(v) && v.length === GROUPS.length && v.every((n) => Number.isInteger(n) && n >= 0 && n <= MAX_PATTERN)) scenes[k] = [...v];
   }
   out.scenes = scenes;
   out.song = Array.isArray(out.song) ? out.song.filter((n) => scenes[String(n)]).slice(0, SONG_MAX) : [];
